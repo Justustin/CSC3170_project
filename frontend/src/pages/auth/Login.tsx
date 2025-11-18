@@ -39,20 +39,20 @@ export const Login: React.FC = () => {
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-primary-50 via-blue-50 to-indigo-100">
       <div className="max-w-md w-full mx-4">
-        <div className="bg-white rounded-2xl shadow-2xl p-8 animate-fade-in">
+        <div className="bg-white rounded-2xl shadow-2xl p-8" style={{ animation: 'slide-up 0.5s ease-out' }}>
           <div className="text-center mb-8">
             <div className="flex justify-center mb-4">
-              <div className="bg-primary-600 p-3 rounded-full">
+              <div className="bg-primary-600 p-3 rounded-full" style={{ animation: 'bounce-in 0.6s cubic-bezier(0.68, -0.55, 0.265, 1.55)' }}>
                 <BookOpen className="h-10 w-10 text-white" />
               </div>
             </div>
-            <h1 className="text-3xl font-bold text-gray-900 mb-2">Welcome Back</h1>
-            <p className="text-gray-600">Sign in to your library account</p>
+            <h1 className="text-3xl font-bold text-gray-900 mb-2" style={{ animation: 'fade-in 0.6s ease-out 0.2s both' }}>Welcome Back</h1>
+            <p className="text-gray-600" style={{ animation: 'fade-in 0.6s ease-out 0.3s both' }}>Sign in to your library account</p>
           </div>
 
-          <form onSubmit={handleSubmit} className="space-y-5">
+          <form onSubmit={handleSubmit} className="space-y-5" style={{ animation: 'fade-in 0.6s ease-out 0.4s both' }}>
             {error && (
-              <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg">
+              <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg" style={{ animation: 'slide-in-left 0.3s ease-out' }}>
                 {error}
               </div>
             )}

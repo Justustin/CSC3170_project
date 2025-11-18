@@ -53,10 +53,10 @@ export const Register: React.FC = () => {
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-primary-50 via-blue-50 to-indigo-100 py-12">
       <div className="max-w-2xl w-full mx-4">
-        <div className="bg-white rounded-2xl shadow-2xl p-8 animate-fade-in">
+        <div className="bg-white rounded-2xl shadow-2xl p-8" style={{ animation: 'slide-up 0.5s ease-out' }}>
           <div className="text-center mb-8">
             <div className="flex justify-center mb-4">
-              <div className="bg-primary-600 p-3 rounded-full">
+              <div className="bg-primary-600 p-3 rounded-full" style={{ animation: 'bounce-in 0.6s cubic-bezier(0.68, -0.55, 0.265, 1.55)' }}>
                 <BookOpen className="h-10 w-10 text-white" />
               </div>
             </div>
