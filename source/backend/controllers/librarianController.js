@@ -505,11 +505,7 @@ exports.getAllBorrowings = async (req, res) => {
     try {
         const { data, error } = await supabase
             .from('borrowings')
-            .select(`
-                *,
-                users:user_id (username, email, first_name, last_name, phone_number),
-                resources:resource_id (title, author, isbn, resource_type)
-            `)
+            .select('*, users(*), resources(*)')
             .order('borrow_date', { ascending: false });
 
         if (error) {
@@ -531,11 +527,7 @@ exports.getOverdueItems = async (req, res) => {
 
         const { data, error } = await supabase
             .from('borrowings')
-            .select(`
-                *,
-                users:user_id (username, email, first_name, last_name, phone_number),
-                resources:resource_id (title, author, isbn, resource_type)
-            `)
+            .select('*, users(*), resources(*)')
             .eq('status', 'Active')
             .lt('due_date', today)
             .order('due_date', { ascending: true });
