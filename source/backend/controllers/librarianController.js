@@ -269,12 +269,41 @@ exports.generateReports = async (req, res) => {
             .from('users')
             .select('*', { count: 'exact', head: true });
 
-        // Get popular resources
-        const { data: popularResources } = await supabase
+        // Get popular resources with borrow counts
+        // First get all borrowings with resource data
+        const { data: allBorrowings } = await supabase
             .from('borrowings')
-            .select('resource_id, resources(*)')
-            .eq('status', 'Active')
-            .limit(10);
+            .select('resource_id, resources(resource_id, title, author, isbn, genre)');
+
+        // Aggregate by resource_id
+        const resourceBorrowCounts = {};
+        if (allBorrowings) {
+            allBorrowings.forEach(borrowing => {
+                if (borrowing.resources) {
+                    const resourceId = borrowing.resource_id;
+                    if (!resourceBorrowCounts[resourceId]) {
+                        resourceBorrowCounts[resourceId] = {
+                            ...borrowing.resources,
+                            borrow_count: 0
+                        };
+                    }
+                    resourceBorrowCounts[resourceId].borrow_count++;
+                }
+            });
+        }
+
+        // Convert to array and sort by borrow count
+        const popularResources = Object.values(resourceBorrowCounts)
+            .sort((a, b) => b.borrow_count - a.borrow_count)
+            .slice(0, 10);
+
+        // Get available resources count
+        const { data: availableCount } = await supabase
+            .from('resources')
+            .select('available_copies');
+
+        const totalAvailable = availableCount ?
+            availableCount.reduce((sum, r) => sum + (r.available_copies || 0), 0) : 0;
 
         res.json({
             total_resources: totalResources || 0,
@@ -282,6 +311,7 @@ exports.generateReports = async (req, res) => {
             active_borrowings: activeBorrowings || 0,
             overdue_borrowings: overdueBorrowings || 0,
             total_users: totalUsers || 0,
+            available_resources: totalAvailable,
             popular_resources: popularResources || []
         });
     } catch (err) {
