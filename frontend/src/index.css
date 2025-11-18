@@ -1,13 +1,24 @@
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+@import "tailwindcss";
 
-@layer base {
-  body {
-    min-height: 100vh;
-    background: linear-gradient(135deg, #f8fafc 0%, #dbeafe 100%);
-    font-family: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
-    margin: 0;
-    padding: 0;
-  }
+body {
+  min-height: 100vh;
+  background: linear-gradient(135deg, #f8fafc 0%, #dbeafe 100%);
+  font-family: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+  margin: 0;
+  padding: 0;
+}
+
+/* Force button text to be visible */
+button {
+  color: inherit;
+}
+
+button.bg-primary-600,
+button.bg-primary-700 {
+  color: white !important;
+}
+
+button.bg-red-600,
+button.bg-red-700 {
+  color: white !important;
 }
