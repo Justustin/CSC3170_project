@@ -1,344 +1,471 @@
 // backend/controllers/librarianController.js
 
-const db = require('../config/db');
-const bcrypt = require('bcryptjs');
+const supabase = require('../config/supabase');
+const bcrypt = require('bcrypt');
 
 // Add New Resource
-exports.addResource = (req, res) => {
-    const { title, author, isbn, resource_type, total_copies, available_copies, location } = req.body;
+exports.addResource = async (req, res) => {
+    try {
+        const { title, author, isbn, resource_type, total_copies, available_copies, genre, publication_year, publisher, description } = req.body;
 
-    // Basic validation
-    if (!title || !author || !resource_type || !location) {
-        return res.status(400).json({ msg: 'Please enter all required fields.' });
-    }
-
-    const insertResourceQuery = 'INSERT INTO Resources (title, author, isbn, resource_type, total_copies, available_copies, location) VALUES (?, ?, ?, ?, ?, ?, ?)';
-    db.query(
-        insertResourceQuery, 
-        [title, author, isbn, resource_type, total_copies || 1, available_copies || (total_copies || 1), location], 
-        (err, result) => {
-            if (err) {
-                console.error('Error adding resource:', err);
-                return res.status(500).json({ msg: 'Server error while adding resource.' });
-            }
-            res.status(201).json({ msg: 'Resource added successfully.' });
+        if (!title || !author || !resource_type) {
+            return res.status(400).json({ error: 'Please enter all required fields.' });
         }
-    );
+
+        const { data, error } = await supabase
+            .from('resources')
+            .insert([{
+                title,
+                author,
+                isbn,
+                resource_type,
+                total_copies: total_copies || 1,
+                available_copies: available_copies || total_copies || 1,
+                genre,
+                publication_year,
+                publisher,
+                description
+            }])
+            .select()
+            .single();
+
+        if (error) {
+            console.error('Error adding resource:', error);
+            return res.status(500).json({ error: 'Failed to add resource.' });
+        }
+
+        res.status(201).json({ message: 'Resource added successfully.', resource: data });
+    } catch (err) {
+        console.error('Add resource error:', err);
+        res.status(500).json({ error: 'Internal server error.' });
+    }
 };
 
-
 // Update Resource
-exports.updateResource = (req, res) => {
-    const resourceId = req.params.id;
-    const { title, author, isbn, resource_type, total_copies, available_copies, location } = req.body;
+exports.updateResource = async (req, res) => {
+    try {
+        const resourceId = req.params.id;
+        const { title, author, isbn, resource_type, total_copies, available_copies, genre, publication_year, publisher, description } = req.body;
 
-    const updateResourceQuery = 'UPDATE Resources SET title = ?, author = ?, isbn = ?, resource_type = ?, total_copies = ?, available_copies = ?, location = ?, updated_at = CURRENT_TIMESTAMP WHERE resource_id = ?';
-    db.query(updateResourceQuery, [title, author, isbn, resource_type, total_copies, available_copies, location, resourceId], (err, result) => {
-        if (err) throw err;
-        res.json({ msg: 'Resource updated successfully.' });
-    });
+        const { error } = await supabase
+            .from('resources')
+            .update({
+                title,
+                author,
+                isbn,
+                resource_type,
+                total_copies,
+                available_copies,
+                genre,
+                publication_year,
+                publisher,
+                description
+            })
+            .eq('resource_id', resourceId);
+
+        if (error) {
+            console.error('Error updating resource:', error);
+            return res.status(500).json({ error: 'Failed to update resource.' });
+        }
+
+        res.json({ message: 'Resource updated successfully.' });
+    } catch (err) {
+        console.error('Update resource error:', err);
+        res.status(500).json({ error: 'Internal server error.' });
+    }
+};
+
+// Edit Resource
+exports.editResource = async (req, res) => {
+    try {
+        const resourceId = req.params.id;
+        const { title, author, isbn, resource_type, total_copies, available_copies, genre, publication_year, publisher, description } = req.body;
+
+        // Validation
+        if (!title || !author || !resource_type) {
+            return res.status(400).json({ error: 'Please enter all required fields.' });
+        }
+
+        if (isNaN(total_copies) || total_copies < 0 || isNaN(available_copies) || available_copies < 0) {
+            return res.status(400).json({ error: 'Copies must be positive integers.' });
+        }
+
+        if (available_copies > total_copies) {
+            return res.status(400).json({ error: 'Available copies cannot exceed total copies.' });
+        }
+
+        const { data, error } = await supabase
+            .from('resources')
+            .update({
+                title,
+                author,
+                isbn,
+                resource_type,
+                total_copies,
+                available_copies,
+                genre,
+                publication_year,
+                publisher,
+                description
+            })
+            .eq('resource_id', resourceId)
+            .select();
+
+        if (error) {
+            console.error('Error editing resource:', error);
+            if (error.code === '23505') { // PostgreSQL unique violation
+                return res.status(400).json({ error: 'A resource with this ISBN already exists.' });
+            }
+            return res.status(500).json({ error: 'Failed to edit resource.' });
+        }
+
+        if (!data || data.length === 0) {
+            return res.status(404).json({ error: 'Resource not found.' });
+        }
+
+        res.json({ message: 'Resource updated successfully.' });
+    } catch (err) {
+        console.error('Edit resource error:', err);
+        res.status(500).json({ error: 'Internal server error.' });
+    }
 };
 
 // Delete Resource
-exports.deleteResource = (req, res) => {
-    const resourceId = req.params.id;
+exports.deleteResource = async (req, res) => {
+    try {
+        const resourceId = req.params.id;
 
-    const deleteResourceQuery = 'DELETE FROM Resources WHERE resource_id = ?';
-    db.query(deleteResourceQuery, [resourceId], (err, result) => {
-        if (err) throw err;
-        res.json({ msg: 'Resource deleted successfully.' });
-    });
-};
-// Edit Resource
-exports.editResource = (req, res) => {
-    const resourceId = req.params.id;
-    const { title, author, isbn, resource_type, total_copies, available_copies, location } = req.body;
+        const { error } = await supabase
+            .from('resources')
+            .delete()
+            .eq('resource_id', resourceId);
 
-    // Basic validation
-    if (!title || !author || !resource_type || !location) {
-        console.warn('Edit Resource: Missing required fields.');
-        return res.status(400).json({ msg: 'Please enter all required fields.' });
-    }
-
-    // Additional validation for copies
-    if (isNaN(total_copies) || total_copies < 0 || isNaN(available_copies) || available_copies < 0) {
-        console.warn('Edit Resource: Invalid copies provided.');
-        return res.status(400).json({ msg: 'Copies must be positive integers.' });
-    }
-
-    // Validation: available_copies should not exceed total_copies
-    if (available_copies > total_copies) {
-        console.warn('Edit Resource: Available copies exceed total copies.');
-        return res.status(400).json({ msg: 'Available copies cannot exceed total copies.' });
-    }
-
-    const updateResourceQuery = `
-        UPDATE Resources 
-        SET title = ?, author = ?, isbn = ?, resource_type = ?, total_copies = ?, available_copies = ?, location = ?, updated_at = CURRENT_TIMESTAMP 
-        WHERE resource_id = ?
-    `;
-
-    db.query(
-        updateResourceQuery,
-        [title, author, isbn, resource_type, total_copies, available_copies, location, resourceId],
-        (err, result) => {
-            if (err) {
-                console.error('Error editing resource:', err);
-                if (err.code === 'ER_DUP_ENTRY') {
-                    return res.status(400).json({ msg: 'A resource with this ISBN already exists.' });
-                }
-                return res.status(500).json({ msg: 'Server error while editing resource.' });
-            }
-
-            if (result.affectedRows === 0) {
-                console.warn(`Edit Resource: Resource with ID ${resourceId} not found.`);
-                return res.status(404).json({ msg: 'Resource not found.' });
-            }
-
-            console.log(`Resource with ID ${resourceId} updated successfully.`);
-            res.json({ msg: 'Resource updated successfully.' });
+        if (error) {
+            console.error('Error deleting resource:', error);
+            return res.status(500).json({ error: 'Failed to delete resource.' });
         }
-    );
+
+        res.json({ message: 'Resource deleted successfully.' });
+    } catch (err) {
+        console.error('Delete resource error:', err);
+        res.status(500).json({ error: 'Internal server error.' });
+    }
+};
+
+// Get Resources
+exports.getResources = async (req, res) => {
+    try {
+        const { data, error } = await supabase
+            .from('resources')
+            .select('*')
+            .order('created_at', { ascending: false });
+
+        if (error) {
+            console.error('Error fetching resources:', error);
+            return res.status(500).json({ error: 'Failed to fetch resources.' });
+        }
+
+        res.json(data || []);
+    } catch (err) {
+        console.error('Get resources error:', err);
+        res.status(500).json({ error: 'Internal server error.' });
+    }
 };
 
 // Manage Borrowing
-exports.manageBorrowing = (req, res) => {
-    const borrowingId = req.params.id;
-    const { status, due_date } = req.body;
+exports.manageBorrowing = async (req, res) => {
+    try {
+        const borrowingId = req.params.id;
+        const { status, due_date } = req.body;
 
-    const updateBorrowingQuery = 'UPDATE Borrowings SET status = ?, due_date = ?, updated_at = CURRENT_TIMESTAMP WHERE borrowing_id = ?';
-    db.query(updateBorrowingQuery, [status, due_date, borrowingId], (err, result) => {
-        if (err) throw err;
-        res.json({ msg: 'Borrowing status updated successfully.' });
-    });
+        const { error } = await supabase
+            .from('borrowings')
+            .update({ status, due_date })
+            .eq('borrowing_id', borrowingId);
+
+        if (error) {
+            console.error('Error managing borrowing:', error);
+            return res.status(500).json({ error: 'Failed to update borrowing status.' });
+        }
+
+        res.json({ message: 'Borrowing status updated successfully.' });
+    } catch (err) {
+        console.error('Manage borrowing error:', err);
+        res.status(500).json({ error: 'Internal server error.' });
+    }
 };
 
 // Track Inventory
-exports.trackInventory = (req, res) => {
-    const trackInventoryQuery = 'SELECT resource_id, title, resource_type, total_copies, available_copies FROM Resources';
-    db.query(trackInventoryQuery, (err, results) => {
-        if (err) throw err;
-        res.json(results);
-    });
+exports.trackInventory = async (req, res) => {
+    try {
+        const { data, error } = await supabase
+            .from('resources')
+            .select('resource_id, title, resource_type, total_copies, available_copies');
+
+        if (error) {
+            console.error('Error tracking inventory:', error);
+            return res.status(500).json({ error: 'Failed to track inventory.' });
+        }
+
+        res.json(data || []);
+    } catch (err) {
+        console.error('Track inventory error:', err);
+        res.status(500).json({ error: 'Internal server error.' });
+    }
 };
 
 // Handle Reservations
-exports.handleReservation = (req, res) => {
-    const reservationId = req.params.id;
-    const { status } = req.body;
+exports.handleReservation = async (req, res) => {
+    try {
+        const reservationId = req.params.id;
+        const { status } = req.body;
 
-    const updateReservationQuery = 'UPDATE Reservations SET status = ?, updated_at = CURRENT_TIMESTAMP WHERE reservation_id = ?';
-    db.query(updateReservationQuery, [status, reservationId], (err, result) => {
-        if (err) throw err;
-        res.json({ msg: 'Reservation status updated successfully.' });
-    });
+        const { error } = await supabase
+            .from('reservations')
+            .update({ status })
+            .eq('reservation_id', reservationId);
+
+        if (error) {
+            console.error('Error handling reservation:', error);
+            return res.status(500).json({ error: 'Failed to update reservation status.' });
+        }
+
+        res.json({ message: 'Reservation status updated successfully.' });
+    } catch (err) {
+        console.error('Handle reservation error:', err);
+        res.status(500).json({ error: 'Internal server error.' });
+    }
 };
 
 // Generate Reports
-exports.generateReports = (req, res) => {
-    // Example: Inventory Report
-    const inventoryReportQuery = 'SELECT title, resource_type, total_copies, available_copies FROM Resources';
-    db.query(inventoryReportQuery, (err, results) => {
-        if (err) throw err;
-        res.json({ inventory_report: results });
-    });
-};
+exports.generateReports = async (req, res) => {
+    try {
+        // Get total resources
+        const { count: totalResources } = await supabase
+            .from('resources')
+            .select('*', { count: 'exact', head: true });
 
-// Send Notifications
-exports.sendNotification = (req, res) => {
-    const { user_id, message } = req.body;
+        // Get total borrowings
+        const { count: totalBorrowings } = await supabase
+            .from('borrowings')
+            .select('*', { count: 'exact', head: true });
 
-    if (!user_id || !message) {
-        return res.status(400).json({ msg: 'Please provide user_id and message.' });
-    }
+        // Get active borrowings
+        const { count: activeBorrowings } = await supabase
+            .from('borrowings')
+            .select('*', { count: 'exact', head: true })
+            .eq('status', 'Active');
 
-    const insertNotificationQuery = 'INSERT INTO Notifications (user_id, message, is_read) VALUES (?, ?, FALSE)';
-    db.query(insertNotificationQuery, [user_id, message], (err, result) => {
-        if (err) throw err;
-        res.status(201).json({ msg: 'Notification sent successfully.' });
-    });
-};
+        // Get overdue borrowings
+        const today = new Date().toISOString().split('T')[0];
+        const { count: overdueBorrowings } = await supabase
+            .from('borrowings')
+            .select('*', { count: 'exact', head: true })
+            .eq('status', 'Active')
+            .lt('due_date', today);
 
-// Manage (Update) User Accounts
-exports.manageUser = (req, res) => {
-    const userId = req.params.id;
-    const { username, email, password, first_name, last_name, role } = req.body;
+        // Get total users
+        const { count: totalUsers } = await supabase
+            .from('users')
+            .select('*', { count: 'exact', head: true });
 
-    // Basic validation
-    if (!username || !email || !first_name || !last_name || !role) {
-        console.warn('Manage User: Missing required fields.');
-        return res.status(400).json({ msg: 'Please enter all required fields.' });
-    }
+        // Get popular resources
+        const { data: popularResources } = await supabase
+            .from('borrowings')
+            .select('resource_id, resources(*)')
+            .eq('status', 'Active')
+            .limit(10);
 
-    // Validate role
-    const validRoles = ['Librarian', 'User', 'Admin']; // Adjust roles as per your system
-    if (!validRoles.includes(role)) {
-        console.warn(`Manage User: Invalid role '${role}' provided.`);
-        return res.status(400).json({ msg: `Role must be one of the following: ${validRoles.join(', ')}.` });
-    }
-
-    // Initialize query parameters
-    let updateFields = 'username = ?, email = ?, first_name = ?, last_name = ?, role = ?, updated_at = CURRENT_TIMESTAMP';
-    let params = [username, email, first_name, last_name, role, userId];
-
-    // Function to execute the update query
-    const executeUpdate = (queryParams) => {
-        const updateUserQuery = `UPDATE Users SET ${updateFields} WHERE user_id = ?`;
-
-        db.query(updateUserQuery, queryParams, (err, result) => {
-            if (err) {
-                console.error('Error updating user:', err);
-                return res.status(500).json({ msg: 'Server error while updating user.' });
-            }
-            if (result.affectedRows === 0) {
-                console.warn(`Manage User: User with ID ${userId} not found.`);
-                return res.status(404).json({ msg: 'User not found.' });
-            }
-            console.log(`User with ID ${userId} updated successfully.`);
-            res.json({ msg: 'User account updated successfully.' });
+        res.json({
+            total_resources: totalResources || 0,
+            total_borrowings: totalBorrowings || 0,
+            active_borrowings: activeBorrowings || 0,
+            overdue_borrowings: overdueBorrowings || 0,
+            total_users: totalUsers || 0,
+            popular_resources: popularResources || []
         });
-    };
-
-    if (password) {
-        // Hash the new password
-        bcrypt.genSalt(10, (err, salt) => {
-            if (err) {
-                console.error('Error generating salt for password hashing:', err);
-                return res.status(500).json({ msg: 'Server error while updating user.' });
-            }
-
-            bcrypt.hash(password, salt, (err, hash) => {
-                if (err) {
-                    console.error('Error hashing password:', err);
-                    return res.status(500).json({ msg: 'Server error while updating user.' });
-                }
-
-                // Append password to updateFields and params
-                const updatedFields = `${updateFields}, password = ?`;
-                const updatedParams = [username, email, first_name, last_name, role, hash, userId];
-                const updateUserQuery = `UPDATE Users SET ${updatedFields} WHERE user_id = ?`;
-
-                db.query(updateUserQuery, updatedParams, (err, result) => {
-                    if (err) {
-                        console.error('Error updating user with password:', err);
-                        return res.status(500).json({ msg: 'Server error while updating user.' });
-                    }
-                    if (result.affectedRows === 0) {
-                        console.warn(`Manage User: User with ID ${userId} not found.`);
-                        return res.status(404).json({ msg: 'User not found.' });
-                    }
-                    console.log(`User with ID ${userId} updated successfully with new password.`);
-                    res.json({ msg: 'User account updated successfully.' });
-                });
-            });
-        });
-    } else {
-        // No password update
-        executeUpdate(params);
+    } catch (err) {
+        console.error('Generate reports error:', err);
+        res.status(500).json({ error: 'Internal server error.' });
     }
 };
 
-exports.getResources = (req, res) => {
-  const getResourcesQuery = 'SELECT * FROM Resources';
-  db.query(getResourcesQuery, (err, results) => {
-      if (err) {
-          console.error('Error fetching resources:', err);
-          return res.status(500).json({ msg: 'Server error while fetching resources.' });
-      }
-      res.json(results);
-  });
-};
+// Send Notification
+exports.sendNotification = async (req, res) => {
+    try {
+        const { user_id, message } = req.body;
 
-// backend/controllers/librarianController.js
+        if (!user_id || !message) {
+            return res.status(400).json({ error: 'Please provide user_id and message.' });
+        }
+
+        const { data, error } = await supabase
+            .from('notifications')
+            .insert([{
+                user_id,
+                message,
+                is_read: false
+            }])
+            .select()
+            .single();
+
+        if (error) {
+            console.error('Error sending notification:', error);
+            return res.status(500).json({ error: 'Failed to send notification.' });
+        }
+
+        res.status(201).json({ message: 'Notification sent successfully.', notification: data });
+    } catch (err) {
+        console.error('Send notification error:', err);
+        res.status(500).json({ error: 'Internal server error.' });
+    }
+};
 
 // Get All Users
-exports.getAllUsers = (req, res) => {
-    const getUsersQuery = 'SELECT user_id, username, email, first_name, last_name, role, created_at, updated_at FROM Users';
-    db.query(getUsersQuery, (err, results) => {
-        if (err) {
-            console.error('Error fetching users:', err);
-            return res.status(500).json({ msg: 'Server error while fetching users.' });
+exports.getAllUsers = async (req, res) => {
+    try {
+        const { data, error } = await supabase
+            .from('users')
+            .select('user_id, username, email, first_name, last_name, role, phone_number, created_at, updated_at')
+            .order('created_at', { ascending: false });
+
+        if (error) {
+            console.error('Error fetching users:', error);
+            return res.status(500).json({ error: 'Failed to fetch users.' });
         }
-        console.log('All users fetched successfully.');
-        res.json(results);
-    });
+
+        res.json(data || []);
+    } catch (err) {
+        console.error('Get all users error:', err);
+        res.status(500).json({ error: 'Internal server error.' });
+    }
 };
 
 // Create New User
-exports.createUser = (req, res) => {
-    const { username, email, password, first_name, last_name, role } = req.body;
+exports.createUser = async (req, res) => {
+    try {
+        const { username, email, password, first_name, last_name, role, phone_number } = req.body;
 
-    // Basic validation
-    if (!username || !email || !password || !first_name || !last_name || !role) {
-        console.warn('Create User: Missing required fields.');
-        return res.status(400).json({ msg: 'Please enter all required fields.' });
-    }
-
-    // Check if role is valid
-    const validRoles = ['Librarian', 'User', 'Admin']; // Adjust roles as per your system
-    if (!validRoles.includes(role)) {
-        console.warn(`Create User: Invalid role '${role}' provided.`);
-        return res.status(400).json({ msg: `Role must be one of the following: ${validRoles.join(', ')}.` });
-    }
-
-    // Check if email already exists
-    const checkEmailQuery = 'SELECT * FROM Users WHERE email = ?';
-    db.query(checkEmailQuery, [email], (err, results) => {
-        if (err) {
-            console.error('Error checking existing email:', err);
-            return res.status(500).json({ msg: 'Server error while checking email.' });
+        if (!username || !email || !password || !first_name || !last_name || !role) {
+            return res.status(400).json({ error: 'Please enter all required fields.' });
         }
 
-        if (results.length > 0) {
-            console.warn(`Create User: Email '${email}' already exists.`);
-            return res.status(400).json({ msg: 'A user with this email already exists.' });
+        const validRoles = ['Librarian', 'Patron'];
+        if (!validRoles.includes(role)) {
+            return res.status(400).json({ error: `Role must be one of: ${validRoles.join(', ')}.` });
         }
 
-        // Hash the password
-        bcrypt.genSalt(10, (err, salt) => {
-            if (err) {
-                console.error('Error generating salt for password hashing:', err);
-                return res.status(500).json({ msg: 'Server error while creating user.' });
-            }
+        // Check if email already exists
+        const { data: existingUser } = await supabase
+            .from('users')
+            .select('*')
+            .or(`username.eq.${username},email.eq.${email}`)
+            .single();
 
-            bcrypt.hash(password, salt, (err, hash) => {
-                if (err) {
-                    console.error('Error hashing password:', err);
-                    return res.status(500).json({ msg: 'Server error while creating user.' });
-                }
+        if (existingUser) {
+            return res.status(400).json({ error: 'A user with this username or email already exists.' });
+        }
 
-                // Insert new user into the database
-                const insertUserQuery = 'INSERT INTO Users (username, email, password, first_name, last_name, role) VALUES (?, ?, ?, ?, ?, ?)';
-                db.query(insertUserQuery, [username, email, hash, first_name, last_name, role], (err, result) => {
-                    if (err) {
-                        console.error('Error creating new user:', err);
-                        return res.status(500).json({ msg: 'Server error while creating user.' });
-                    }
-                    console.log(`New user created successfully with ID ${result.insertId}.`);
-                    res.status(201).json({ msg: 'User account created successfully.' });
-                });
-            });
-        });
-    });
+        // Hash password
+        const hashedPassword = await bcrypt.hash(password, 10);
+
+        // Insert new user
+        const { data, error } = await supabase
+            .from('users')
+            .insert([{
+                username,
+                email,
+                password_hash: hashedPassword,
+                first_name,
+                last_name,
+                role,
+                phone_number
+            }])
+            .select()
+            .single();
+
+        if (error) {
+            console.error('Error creating user:', error);
+            return res.status(500).json({ error: 'Failed to create user.' });
+        }
+
+        res.status(201).json({ message: 'User account created successfully.', user: data });
+    } catch (err) {
+        console.error('Create user error:', err);
+        res.status(500).json({ error: 'Internal server error.' });
+    }
 };
-// backend/controllers/librarianController.js
+
+// Manage (Update) User Accounts
+exports.manageUser = async (req, res) => {
+    try {
+        const userId = req.params.id;
+        const { username, email, password, first_name, last_name, role, phone_number } = req.body;
+
+        if (!username || !email || !first_name || !last_name || !role) {
+            return res.status(400).json({ error: 'Please enter all required fields.' });
+        }
+
+        const validRoles = ['Librarian', 'Patron'];
+        if (!validRoles.includes(role)) {
+            return res.status(400).json({ error: `Role must be one of: ${validRoles.join(', ')}.` });
+        }
+
+        const updateData = {
+            username,
+            email,
+            first_name,
+            last_name,
+            role,
+            phone_number
+        };
+
+        // If password is provided, hash it
+        if (password) {
+            const hashedPassword = await bcrypt.hash(password, 10);
+            updateData.password_hash = hashedPassword;
+        }
+
+        const { data, error } = await supabase
+            .from('users')
+            .update(updateData)
+            .eq('user_id', userId)
+            .select();
+
+        if (error) {
+            console.error('Error managing user:', error);
+            return res.status(500).json({ error: 'Failed to update user.' });
+        }
+
+        if (!data || data.length === 0) {
+            return res.status(404).json({ error: 'User not found.' });
+        }
+
+        res.json({ message: 'User account updated successfully.' });
+    } catch (err) {
+        console.error('Manage user error:', err);
+        res.status(500).json({ error: 'Internal server error.' });
+    }
+};
 
 // Delete User Account
-exports.deleteUser = (req, res) => {
-    const userId = req.params.id;
+exports.deleteUser = async (req, res) => {
+    try {
+        const userId = req.params.id;
 
-    const deleteUserQuery = 'DELETE FROM Users WHERE user_id = ?';
-    db.query(deleteUserQuery, [userId], (err, result) => {
-        if (err) {
-            console.error('Error deleting user:', err);
-            return res.status(500).json({ msg: 'Server error while deleting user.' });
+        const { error } = await supabase
+            .from('users')
+            .delete()
+            .eq('user_id', userId);
+
+        if (error) {
+            console.error('Error deleting user:', error);
+            return res.status(500).json({ error: 'Failed to delete user.' });
         }
-        if (result.affectedRows === 0) {
-            console.warn(`Delete User: User with ID ${userId} not found.`);
-            return res.status(404).json({ msg: 'User not found.' });
-        }
-        console.log(`User with ID ${userId} deleted successfully.`);
-        res.json({ msg: 'User account deleted successfully.' });
-    });
+
+        res.json({ message: 'User account deleted successfully.' });
+    } catch (err) {
+        console.error('Delete user error:', err);
+        res.status(500).json({ error: 'Internal server error.' });
+    }
 };
-

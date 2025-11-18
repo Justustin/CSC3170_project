@@ -1,201 +1,242 @@
 // backend/controllers/patronController.js
 
-const db = require('../config/db');
-const bcrypt = require('bcryptjs');
-const { validationResult } = require('express-validator');
+const supabase = require('../config/supabase');
+const bcrypt = require('bcrypt');
+const dayjs = require('dayjs');
+
 // Search Catalog
-exports.searchCatalog = (req, res) => {
-    const { query } = req.query;
+exports.searchCatalog = async (req, res) => {
+    try {
+        const { query, type, genre, author } = req.query;
 
-    const searchQuery = `
-        SELECT resource_id, title, author, resource_type, isbn, available_copies, location
-        FROM Resources
-        WHERE title LIKE ? OR author LIKE ? OR isbn LIKE ?
-    `;
+        let supabaseQuery = supabase.from('resources').select('*');
 
-    const searchTerm = `%${query}%`;
-    db.query(searchQuery, [searchTerm, searchTerm, searchTerm], (err, results) => {
-        if (err) throw err;
-        res.json(results);
-    });
+        // Apply filters
+        if (query) {
+            supabaseQuery = supabaseQuery.or(`title.ilike.%${query}%,author.ilike.%${query}%,isbn.ilike.%${query}%`);
+        }
+        if (type && type !== 'All') {
+            supabaseQuery = supabaseQuery.eq('resource_type', type);
+        }
+        if (genre) {
+            supabaseQuery = supabaseQuery.eq('genre', genre);
+        }
+        if (author) {
+            supabaseQuery = supabaseQuery.ilike('author', `%${author}%`);
+        }
+
+        const { data, error } = await supabaseQuery;
+
+        if (error) {
+            console.error('Error searching catalog:', error);
+            return res.status(500).json({ error: 'Failed to search catalog.' });
+        }
+
+        res.json(data || []);
+    } catch (err) {
+        console.error('Search catalog error:', err);
+        res.status(500).json({ error: 'Internal server error.' });
+    }
 };
 
+// Borrow Resource
 exports.borrowResource = async (req, res) => {
-  // Validate input
-  const errors = validationResult(req);
-  if (!errors.isEmpty()) {
-      return res.status(400).json({ errors: errors.array() });
-  }
+    try {
+        const { resource_id } = req.body;
+        const user_id = req.user.user_id;
 
-  const { resource_id } = req.body;
-  const user_id = req.user.user_id; // Assumes authMiddleware adds user info to req
+        // Check if resource exists and is available
+        const { data: resource, error: resourceError } = await supabase
+            .from('resources')
+            .select('*')
+            .eq('resource_id', resource_id)
+            .single();
 
-  try {
-      // Check if resource exists and is available
-      const [resourceRows] = await db.promise().query(
-          'SELECT * FROM Resources WHERE resource_id = ?',
-          [resource_id]
-      );
+        if (resourceError || !resource) {
+            return res.status(404).json({ error: 'Resource not found.' });
+        }
 
-      if (resourceRows.length === 0) {
-          return res.status(404).json({ msg: 'Resource not found.' });
-      }
+        if (resource.available_copies < 1) {
+            return res.status(400).json({ error: 'No available copies for this resource.' });
+        }
 
-      const resource = resourceRows[0];
+        // Create borrowing record
+        const borrow_date = new Date().toISOString().split('T')[0];
+        const due_date = new Date();
+        due_date.setDate(due_date.getDate() + 14); // 2 weeks loan period
+        const dueDateStr = due_date.toISOString().split('T')[0];
 
-      if (resource.available_copies < 1) {
-          return res.status(400).json({ msg: 'No available copies for this resource.' });
-      }
+        const { data: borrowing, error: borrowError } = await supabase
+            .from('borrowings')
+            .insert([{
+                user_id,
+                resource_id,
+                borrow_date,
+                due_date: dueDateStr,
+                status: 'Active'
+            }])
+            .select()
+            .single();
 
-      // Create borrowing record
-      const borrow_date = new Date();
-      const due_date = new Date();
-      due_date.setDate(borrow_date.getDate() + 14); // 2 weeks loan period
+        if (borrowError) {
+            console.error('Error creating borrowing:', borrowError);
+            return res.status(500).json({ error: 'Failed to borrow resource.' });
+        }
 
-      await db.promise().query(
-          'INSERT INTO Borrowings (user_id, resource_id, borrow_date, due_date, status) VALUES (?, ?, ?, ?, ?)',
-          [user_id, resource_id, borrow_date.toISOString().split('T')[0], due_date.toISOString().split('T')[0], 'Borrowed']
-      );
+        // Update available copies
+        const { error: updateError } = await supabase
+            .from('resources')
+            .update({ available_copies: resource.available_copies - 1 })
+            .eq('resource_id', resource_id);
 
-      // Update available copies
-      await db.promise().query(
-          'UPDATE Resources SET available_copies = available_copies - 1 WHERE resource_id = ?',
-          [resource_id]
-      );
+        if (updateError) {
+            console.error('Error updating resource:', updateError);
+            return res.status(500).json({ error: 'Failed to update resource availability.' });
+        }
 
-      res.status(200).json({ msg: 'Resource borrowed successfully.', due_date: due_date.toISOString().split('T')[0] });
-  } catch (err) {
-      console.error('Error borrowing resource:', err.message);
-      res.status(500).json({ msg: 'Server error.' });
-  }
+        res.status(200).json({
+            message: 'Resource borrowed successfully.',
+            due_date: dueDateStr,
+            borrowing
+        });
+    } catch (err) {
+        console.error('Borrow resource error:', err);
+        res.status(500).json({ error: 'Internal server error.' });
+    }
 };
 
 // Reserve Resource
-exports.reserveResource = (req, res) => {
-    const { resource_id } = req.body;
-    const user_id = req.user.user_id;
+exports.reserveResource = async (req, res) => {
+    try {
+        const { resource_id } = req.body;
+        const user_id = req.user.user_id;
 
-    if (!resource_id) {
-        return res.status(400).json({ msg: 'Please provide resource_id.' });
-    }
+        if (!resource_id) {
+            return res.status(400).json({ error: 'Please provide resource_id.' });
+        }
 
-    // Check if resource exists
-    const checkResourceQuery = 'SELECT * FROM Resources WHERE resource_id = ?';
-    db.query(checkResourceQuery, [resource_id], (err, results) => {
-        if (err) throw err;
+        // Check if resource exists
+        const { data: resource, error: resourceError } = await supabase
+            .from('resources')
+            .select('*')
+            .eq('resource_id', resource_id)
+            .single();
 
-        if (results.length === 0) {
-            return res.status(404).json({ msg: 'Resource not found.' });
+        if (resourceError || !resource) {
+            return res.status(404).json({ error: 'Resource not found.' });
         }
 
         // Check if resource is available
-        if (results[0].available_copies > 0) {
-            return res.status(400).json({ msg: 'Resource is available. You can borrow it instead of reserving.' });
+        if (resource.available_copies > 0) {
+            return res.status(400).json({ error: 'Resource is available. You can borrow it instead of reserving.' });
         }
 
         // Check if user already has a reservation
-        const checkExistingReservationQuery = 'SELECT * FROM Reservations WHERE user_id = ? AND resource_id = ? AND status = "Reserved"';
-        db.query(checkExistingReservationQuery, [user_id, resource_id], (err, resResults) => {
-            if (err) throw err;
+        const { data: existingReservation } = await supabase
+            .from('reservations')
+            .select('*')
+            .eq('user_id', user_id)
+            .eq('resource_id', resource_id)
+            .eq('status', 'Pending')
+            .single();
 
-            if (resResults.length > 0) {
-                return res.status(400).json({ msg: 'You have already reserved this resource.' });
-            }
-
-            // Insert reservation
-            const insertReservationQuery = 'INSERT INTO Reservations (user_id, resource_id, reservation_date, status) VALUES (?, ?, ?, ?)';
-            db.query(insertReservationQuery, [user_id, resource_id, new Date().toISOString().split('T')[0], 'Reserved'], (err, result) => {
-                if (err) throw err;
-                res.status(201).json({ msg: 'Resource reserved successfully.', reservation_id: result.insertId });
-            });
-        });
-    });
-};
-
-exports.getBorrowedBooks = async (req, res) => {
-    try {
-        console.log('getBorrowedBooks endpoint called.');
-        console.log('Request User:', req.user);
-
-        // Extract user ID from the JWT payload
-        const userId = req.user && req.user.user_id;
-        console.log('Extracted User ID:', userId);
-
-        if (!userId) {
-            console.error('User ID is undefined or null.');
-            return res.status(400).json({ msg: 'Invalid user ID.' });
+        if (existingReservation) {
+            return res.status(400).json({ error: 'You have already reserved this resource.' });
         }
 
-        const getBorrowedBooksQuery = `
-            SELECT 
-                b.borrowing_id,
-                r.title,
-                r.author,
-                r.isbn,
-                r.resource_type,
-                b.borrow_date,
-                b.due_date,
-                b.status,
-                b.renewals
-            FROM 
-                Borrowings b
-            JOIN 
-                Resources r ON b.resource_id = r.resource_id
-            WHERE 
-                b.user_id = ? AND b.status = 'Borrowed'
-        `;
+        // Insert reservation
+        const { data: reservation, error: reservationError } = await supabase
+            .from('reservations')
+            .insert([{
+                user_id,
+                resource_id,
+                status: 'Pending'
+            }])
+            .select()
+            .single();
 
-        // Execute the query using promise-based interface
-        const [results] = await db.promise().query(getBorrowedBooksQuery, [userId]);
-        console.log(`Fetched ${results.length} borrowed books for user ID ${userId}.`);
+        if (reservationError) {
+            console.error('Error creating reservation:', reservationError);
+            return res.status(500).json({ error: 'Failed to reserve resource.' });
+        }
 
-        res.json(results);
+        res.status(201).json({
+            message: 'Resource reserved successfully.',
+            reservation
+        });
     } catch (err) {
-        console.error('Error in getBorrowedBooks:', err);
-        res.status(500).json({ msg: 'Server error while fetching borrowed books.' });
+        console.error('Reserve resource error:', err);
+        res.status(500).json({ error: 'Internal server error.' });
     }
 };
-// Import necessary modules
 
-const dayjs = require('dayjs'); // For date manipulation
+// Get Borrowed Books
+exports.getBorrowedBooks = async (req, res) => {
+    try {
+        const userId = req.user && req.user.user_id;
 
-exports.renewBorrowing = (req, res) => {
-    const borrowingId = req.params.borrowingId;
-    const userId = req.user.user_id;
-
-    // Define maximum renewals allowed
-    const MAX_RENEWALS = 2;
-
-    // Define renewal period (e.g., extend due_date by 14 days)
-    const RENEWAL_PERIOD_DAYS = 14;
-
-    // Fetch the borrowing record without unused fields
-    const fetchBorrowingQuery = `
-        SELECT 
-            b.borrowing_id,
-            b.due_date,
-            b.renewals
-        FROM 
-            Borrowings b
-        WHERE 
-            b.borrowing_id = ? AND b.user_id = ? AND b.status = 'Borrowed'
-    `;
-
-    db.query(fetchBorrowingQuery, [borrowingId, userId], (err, results) => {
-        if (err) {
-            console.error('Error fetching borrowing record:', err);
-            return res.status(500).json({ msg: 'Server error while processing renewal.' });
+        if (!userId) {
+            return res.status(400).json({ error: 'Invalid user ID.' });
         }
 
-        if (results.length === 0) {
-            return res.status(404).json({ msg: 'Borrowing record not found or already returned.' });
+        const { data, error } = await supabase
+            .from('borrowings')
+            .select(`
+                borrowing_id,
+                borrow_date,
+                due_date,
+                return_date,
+                status,
+                renewals,
+                resource:resources (
+                    resource_id,
+                    title,
+                    author,
+                    isbn,
+                    resource_type
+                )
+            `)
+            .eq('user_id', userId)
+            .eq('status', 'Active')
+            .order('borrow_date', { ascending: false });
+
+        if (error) {
+            console.error('Error fetching borrowed books:', error);
+            return res.status(500).json({ error: 'Failed to fetch borrowed books.' });
         }
 
-        const borrowing = results[0];
+        res.json(data || []);
+    } catch (err) {
+        console.error('Get borrowed books error:', err);
+        res.status(500).json({ error: 'Internal server error.' });
+    }
+};
+
+// Renew Borrowing
+exports.renewBorrowing = async (req, res) => {
+    try {
+        const borrowingId = req.params.borrowingId;
+        const userId = req.user.user_id;
+
+        const MAX_RENEWALS = 2;
+        const RENEWAL_PERIOD_DAYS = 14;
+
+        // Fetch borrowing record
+        const { data: borrowing, error: fetchError } = await supabase
+            .from('borrowings')
+            .select('*')
+            .eq('borrowing_id', borrowingId)
+            .eq('user_id', userId)
+            .eq('status', 'Active')
+            .single();
+
+        if (fetchError || !borrowing) {
+            return res.status(404).json({ error: 'Borrowing record not found or already returned.' });
+        }
 
         // Check if maximum renewals have been reached
         if (borrowing.renewals >= MAX_RENEWALS) {
-            return res.status(400).json({ msg: `Maximum renewals (${MAX_RENEWALS}) reached.` });
+            return res.status(400).json({ error: `Maximum renewals (${MAX_RENEWALS}) reached.` });
         }
 
         // Check if the book is overdue
@@ -203,137 +244,128 @@ exports.renewBorrowing = (req, res) => {
         const dueDate = dayjs(borrowing.due_date);
 
         if (today.isAfter(dueDate)) {
-            return res.status(400).json({ msg: 'Cannot renew an overdue book.' });
+            return res.status(400).json({ error: 'Cannot renew an overdue book.' });
         }
 
         // Calculate new due date
         const newDueDate = dueDate.add(RENEWAL_PERIOD_DAYS, 'day').format('YYYY-MM-DD');
 
-        // Update the borrowing record with the new due date and increment renewals
-        const updateBorrowingQuery = `
-            UPDATE 
-                Borrowings 
-            SET 
-                due_date = ?, 
-                renewals = renewals + 1,
-                updated_at = CURRENT_TIMESTAMP
-            WHERE 
-                borrowing_id = ? AND user_id = ?
-        `;
-
-        db.query(updateBorrowingQuery, [newDueDate, borrowingId, userId], (err, updateResult) => {
-            if (err) {
-                console.error('Error updating borrowing record:', err);
-                return res.status(500).json({ msg: 'Server error while renewing borrowing.' });
-            }
-
-            if (updateResult.affectedRows === 0) {
-                return res.status(500).json({ msg: 'Failed to renew the borrowing record.' });
-            }
-
-            res.json({ 
-                msg: 'Borrowing renewed successfully.', 
-                new_due_date: newDueDate,
+        // Update the borrowing record
+        const { error: updateError } = await supabase
+            .from('borrowings')
+            .update({
+                due_date: newDueDate,
                 renewals: borrowing.renewals + 1
-            });
-        });
-    });
-};
+            })
+            .eq('borrowing_id', borrowingId)
+            .eq('user_id', userId);
 
+        if (updateError) {
+            console.error('Error updating borrowing record:', updateError);
+            return res.status(500).json({ error: 'Failed to renew borrowing.' });
+        }
+
+        res.json({
+            message: 'Borrowing renewed successfully.',
+            new_due_date: newDueDate,
+            renewals: borrowing.renewals + 1
+        });
+    } catch (err) {
+        console.error('Renew borrowing error:', err);
+        res.status(500).json({ error: 'Internal server error.' });
+    }
+};
 
 // View Borrowing History
-exports.borrowHistory = (req, res) => {
-    const user_id = req.user.user_id;
+exports.borrowHistory = async (req, res) => {
+    try {
+        const user_id = req.user.user_id;
 
-    const historyQuery = `
-        SELECT r.title, b.borrow_date, b.due_date, b.return_date, b.status
-        FROM Borrowings b
-        JOIN Resources r ON b.resource_id = r.resource_id
-        WHERE b.user_id = ?
-        ORDER BY b.borrow_date DESC
-    `;
+        const { data, error } = await supabase
+            .from('borrowings')
+            .select(`
+                borrowing_id,
+                borrow_date,
+                due_date,
+                return_date,
+                status,
+                renewals,
+                resource:resources (
+                    title,
+                    author,
+                    isbn
+                )
+            `)
+            .eq('user_id', user_id)
+            .order('borrow_date', { ascending: false });
 
-    db.query(historyQuery, [user_id], (err, results) => {
-        if (err) throw err;
-        res.json(results);
-    });
+        if (error) {
+            console.error('Error fetching borrow history:', error);
+            return res.status(500).json({ error: 'Failed to fetch borrow history.' });
+        }
+
+        res.json(data || []);
+    } catch (err) {
+        console.error('Borrow history error:', err);
+        res.status(500).json({ error: 'Internal server error.' });
+    }
 };
 
-// // Renew Borrowals
-// exports.renewBorrowal = (req, res) => {
-//     const borrowing_id = req.params.id;
-//     const user_id = req.user.user_id;
+// Get Notifications
+exports.getNotifications = async (req, res) => {
+    try {
+        const user_id = req.user.user_id;
 
-//     // Check if borrowing exists and is eligible for renewal
-//     const checkBorrowingQuery = 'SELECT * FROM Borrowings WHERE borrowing_id = ? AND user_id = ? AND status = "Borrowed"';
-//     db.query(checkBorrowingQuery, [borrowing_id, user_id], (err, results) => {
-//         if (err) throw err;
+        const { data, error } = await supabase
+            .from('notifications')
+            .select('*')
+            .eq('user_id', user_id)
+            .order('date_sent', { ascending: false });
 
-//         if (results.length === 0) {
-//             return res.status(404).json({ msg: 'Borrowing record not found or not eligible for renewal.' });
-//         }
+        if (error) {
+            console.error('Error fetching notifications:', error);
+            return res.status(500).json({ error: 'Failed to fetch notifications.' });
+        }
 
-//         // Update due_date (extend by 14 days)
-//         const newDueDate = new Date(results[0].due_date);
-//         newDueDate.setDate(newDueDate.getDate() + 14);
-
-//         const updateDueDateQuery = 'UPDATE Borrowings SET due_date = ?, updated_at = CURRENT_TIMESTAMP WHERE borrowing_id = ?';
-//         db.query(updateDueDateQuery, [newDueDate.toISOString().split('T')[0], borrowing_id], (err, result) => {
-//             if (err) throw err;
-//             res.json({ msg: 'Borrowing renewed successfully.', new_due_date: newDueDate.toISOString().split('T')[0] });
-//         });
-//     });
-// };
-
-// Receive Notifications
-exports.getNotifications = (req, res) => {
-    const user_id = req.user.user_id;
-
-    const notificationsQuery = `
-        SELECT notification_id, message, is_read, created_at
-        FROM Notifications
-        WHERE user_id = ?
-        ORDER BY created_at DESC
-    `;
-
-    db.query(notificationsQuery, [user_id], (err, results) => {
-        if (err) throw err;
-        res.json(results);
-    });
+        res.json(data || []);
+    } catch (err) {
+        console.error('Get notifications error:', err);
+        res.status(500).json({ error: 'Internal server error.' });
+    }
 };
 
 // Update Profile
-exports.updateProfile = (req, res) => {
-    const user_id = req.user.user_id;
-    const { email, password, first_name, last_name, phone, address } = req.body;
+exports.updateProfile = async (req, res) => {
+    try {
+        const user_id = req.user.user_id;
+        const { email, password, first_name, last_name, phone_number } = req.body;
 
-    let updateFields = 'email = ?, first_name = ?, last_name = ?, phone = ?, address = ?, updated_at = CURRENT_TIMESTAMP';
-    let params = [email, first_name, last_name, phone, address, user_id];
+        const updateData = {
+            email,
+            first_name,
+            last_name,
+            phone_number
+        };
 
-    if (password) {
-        // Hash the new password
-        bcrypt.genSalt(10, (err, salt) => {
-            if (err) throw err;
+        // If password is provided, hash it
+        if (password) {
+            const hashedPassword = await bcrypt.hash(password, 10);
+            updateData.password_hash = hashedPassword;
+        }
 
-            bcrypt.hash(password, salt, (err, hash) => {
-                if (err) throw err;
+        const { error } = await supabase
+            .from('users')
+            .update(updateData)
+            .eq('user_id', user_id);
 
-                updateFields += ', password = ?';
-                params.splice(5, 0, hash); // Insert hash before user_id
-                const updateProfileQuery = `UPDATE Users SET ${updateFields} WHERE user_id = ?`;
+        if (error) {
+            console.error('Error updating profile:', error);
+            return res.status(500).json({ error: 'Failed to update profile.' });
+        }
 
-                db.query(updateProfileQuery, params, (err, result) => {
-                    if (err) throw err;
-                    res.json({ msg: 'Profile updated successfully.' });
-                });
-            });
-        });
-    } else {
-        const updateProfileQuery = `UPDATE Users SET ${updateFields} WHERE user_id = ?`;
-
-        db.query(updateProfileQuery, params, (err, result) => {
-            if (err) throw err;
-            res.json({ msg: 'Profile updated successfully.' });
-        });
+        res.json({ message: 'Profile updated successfully.' });
+    } catch (err) {
+        console.error('Update profile error:', err);
+        res.status(500).json({ error: 'Internal server error.' });
     }
 };
