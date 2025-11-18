@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { BookOpen, Calendar, RefreshCw } from 'lucide-react';
+import { BookOpen, Calendar, RefreshCw, CheckCircle } from 'lucide-react';
 import { Layout } from '../../components/layout/Layout';
 import { Card } from '../../components/common/Card';
 import { Button } from '../../components/common/Button';
@@ -10,6 +10,7 @@ export const BorrowedBooks: React.FC = () => {
   const [borrowings, setBorrowings] = useState<Borrowing[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [renewingId, setRenewingId] = useState<number | null>(null);
+  const [returningId, setReturningId] = useState<number | null>(null);
 
   useEffect(() => {
     loadBorrowedBooks();
@@ -37,6 +38,23 @@ export const BorrowedBooks: React.FC = () => {
       alert(error.response?.data?.error || 'Failed to renew book');
     } finally {
       setRenewingId(null);
+    }
+  };
+
+  const handleReturn = async (borrowingId: number, title: string) => {
+    if (!confirm(`Are you sure you want to return "${title}"?`)) {
+      return;
+    }
+
+    setReturningId(borrowingId);
+    try {
+      await patronAPI.returnBorrowing(borrowingId);
+      alert('Book returned successfully!');
+      loadBorrowedBooks();
+    } catch (error: any) {
+      alert(error.response?.data?.error || 'Failed to return book');
+    } finally {
+      setReturningId(null);
     }
   };
 
@@ -151,12 +169,22 @@ export const BorrowedBooks: React.FC = () => {
                       </div>
                     </div>
 
-                    <div className="ml-4">
+                    <div className="ml-4 flex flex-col gap-2">
+                      <Button
+                        variant="primary"
+                        onClick={() => handleReturn(borrowing.borrowing_id, borrowing.resource?.title || 'this book')}
+                        isLoading={returningId === borrowing.borrowing_id}
+                        disabled={renewingId !== null}
+                      >
+                        <CheckCircle className="h-4 w-4 mr-2" />
+                        Return
+                      </Button>
                       {borrowing.renewals < 2 && !isOverdue && (
                         <Button
                           variant="secondary"
                           onClick={() => handleRenew(borrowing.borrowing_id)}
                           isLoading={renewingId === borrowing.borrowing_id}
+                          disabled={returningId !== null}
                         >
                           <RefreshCw className="h-4 w-4 mr-2" />
                           Renew

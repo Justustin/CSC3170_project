@@ -276,6 +276,63 @@ exports.renewBorrowing = async (req, res) => {
     }
 };
 
+// Return Borrowing
+exports.returnBorrowing = async (req, res) => {
+    try {
+        const borrowingId = req.params.borrowingId;
+        const userId = req.user.user_id;
+
+        // Fetch borrowing record
+        const { data: borrowing, error: fetchError } = await supabase
+            .from('borrowings')
+            .select('*, resources(*)')
+            .eq('borrowing_id', borrowingId)
+            .eq('user_id', userId)
+            .eq('status', 'Active')
+            .single();
+
+        if (fetchError || !borrowing) {
+            return res.status(404).json({ error: 'Borrowing record not found or already returned.' });
+        }
+
+        // Update the borrowing record to mark as returned
+        const { error: updateError } = await supabase
+            .from('borrowings')
+            .update({
+                return_date: new Date().toISOString().split('T')[0],
+                status: 'Returned'
+            })
+            .eq('borrowing_id', borrowingId)
+            .eq('user_id', userId);
+
+        if (updateError) {
+            console.error('Error updating borrowing record:', updateError);
+            return res.status(500).json({ error: 'Failed to return book.' });
+        }
+
+        // Increment available_copies in resources table
+        const { error: resourceError } = await supabase
+            .from('resources')
+            .update({
+                available_copies: borrowing.resources.available_copies + 1
+            })
+            .eq('resource_id', borrowing.resource_id);
+
+        if (resourceError) {
+            console.error('Error updating resource:', resourceError);
+            // Even if this fails, the book is marked as returned
+        }
+
+        res.json({
+            message: 'Book returned successfully.',
+            return_date: new Date().toISOString().split('T')[0]
+        });
+    } catch (err) {
+        console.error('Return borrowing error:', err);
+        res.status(500).json({ error: 'Internal server error.' });
+    }
+};
+
 // View Borrowing History
 exports.borrowHistory = async (req, res) => {
     try {

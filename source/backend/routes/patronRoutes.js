@@ -36,6 +36,10 @@ router.get('/get-borrowed-books', patronController.getBorrowedBooks);
 
 // Renew a Borrowing
 router.put('/renew-borrowing/:borrowingId', patronController.renewBorrowing);
+
+// Return a Borrowing
+router.put('/return-borrowing/:borrowingId', patronController.returnBorrowing);
+
 // Additional routes as needed
 
 module.exports = router;

@@ -9,7 +9,7 @@ CREATE TABLE IF NOT EXISTS users (
     username VARCHAR(50) UNIQUE NOT NULL,
     email VARCHAR(100) UNIQUE NOT NULL,
     password_hash VARCHAR(255) NOT NULL,
-    role VARCHAR(20) NOT NULL CHECK (role IN ('Librarian', 'Patron')),
+    role VARCHAR(20) NOT NULL CHECK (role IN ('Director', 'Librarian', 'Patron')),
     first_name VARCHAR(100),
     last_name VARCHAR(100),
     phone_number VARCHAR(20),
@@ -123,9 +123,32 @@ VALUES
     ('Pride and Prejudice', 'Jane Austen', '978-0-14-143951-8', 1813, 'Romance', 'Book', 3, 3, 'T. Egerton', 'A romantic novel of manners')
 ON CONFLICT (isbn) DO NOTHING;
 
+-- Sample Director (only one)
+INSERT INTO users (username, email, password_hash, role, first_name, last_name)
+VALUES ('director', 'director@library.com', '$2b$10$placeholder', 'Director', 'Admin', 'Director')
+ON CONFLICT (username) DO NOTHING;
+
+-- Library Logs Table (Audit Trail)
+CREATE TABLE IF NOT EXISTS library_logs (
+    log_id SERIAL PRIMARY KEY,
+    user_id INTEGER REFERENCES users(user_id) ON DELETE SET NULL,
+    action VARCHAR(100) NOT NULL,
+    entity_type VARCHAR(50),
+    entity_id INTEGER,
+    description TEXT,
+    ip_address VARCHAR(45),
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Create index for library logs
+CREATE INDEX IF NOT EXISTS idx_library_logs_user_id ON library_logs(user_id);
+CREATE INDEX IF NOT EXISTS idx_library_logs_created_at ON library_logs(created_at);
+CREATE INDEX IF NOT EXISTS idx_library_logs_action ON library_logs(action);
+
 -- Comments for documentation
-COMMENT ON TABLE users IS 'Stores user information for both librarians and patrons';
+COMMENT ON TABLE users IS 'Stores user information for directors, librarians and patrons';
 COMMENT ON TABLE resources IS 'Stores information about books and journals in the library';
 COMMENT ON TABLE borrowings IS 'Tracks borrowing records including active and returned items';
 COMMENT ON TABLE reservations IS 'Manages reservation requests for unavailable resources';
 COMMENT ON TABLE notifications IS 'Stores notifications sent to users';
+COMMENT ON TABLE library_logs IS 'Audit trail for all user and system operations';

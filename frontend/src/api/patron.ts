@@ -32,6 +32,11 @@ export const patronAPI = {
     return response.data;
   },
 
+  returnBorrowing: async (borrowingId: number) => {
+    const response = await axiosInstance.put(`/patron/return-borrowing/${borrowingId}`);
+    return response.data;
+  },
+
   getNotifications: async (): Promise<Notification[]> => {
     const response = await axiosInstance.get('/patron/notifications');
     return response.data;
