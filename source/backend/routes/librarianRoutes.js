@@ -7,8 +7,9 @@ const authMiddleware = require('../middleware/authMiddleware');
 const roleMiddleware = require('../middleware/roleMiddleware');
 
 // Apply authentication and role middleware to all librarian routes
+// Directors have all librarian permissions
 router.use(authMiddleware);
-router.use(roleMiddleware('Librarian'));
+router.use(roleMiddleware(['Librarian', 'Director']));
 
 // Add New Resource
 router.post('/add-resource', librarianController.addResource);

@@ -28,7 +28,10 @@ function App() {
 
   const getDefaultRoute = () => {
     if (!isAuthenticated) return '/login';
-    return user?.role === 'Librarian' ? '/librarian/resources' : '/patron/search';
+    if (user?.role === 'Director' || user?.role === 'Librarian') {
+      return '/librarian/resources';
+    }
+    return '/patron/search';
   };
 
   return (
@@ -64,11 +67,11 @@ function App() {
           }
         />
 
-        {/* Librarian routes */}
+        {/* Librarian routes (Directors have all librarian permissions) */}
         <Route
           path="/librarian/resources"
           element={
-            <ProtectedRoute allowedRoles={['Librarian']}>
+            <ProtectedRoute allowedRoles={['Librarian', 'Director']}>
               <ManageResources />
             </ProtectedRoute>
           }
@@ -76,7 +79,7 @@ function App() {
         <Route
           path="/librarian/users"
           element={
-            <ProtectedRoute allowedRoles={['Librarian']}>
+            <ProtectedRoute allowedRoles={['Librarian', 'Director']}>
               <ManageUsers />
             </ProtectedRoute>
           }
@@ -84,7 +87,7 @@ function App() {
         <Route
           path="/librarian/reports"
           element={
-            <ProtectedRoute allowedRoles={['Librarian']}>
+            <ProtectedRoute allowedRoles={['Librarian', 'Director']}>
               <Reports />
             </ProtectedRoute>
           }
@@ -92,7 +95,7 @@ function App() {
         <Route
           path="/librarian/borrowings"
           element={
-            <ProtectedRoute allowedRoles={['Librarian']}>
+            <ProtectedRoute allowedRoles={['Librarian', 'Director']}>
               <Borrowings />
             </ProtectedRoute>
           }
@@ -100,7 +103,7 @@ function App() {
         <Route
           path="/librarian/overdue"
           element={
-            <ProtectedRoute allowedRoles={['Librarian']}>
+            <ProtectedRoute allowedRoles={['Librarian', 'Director']}>
               <Overdue />
             </ProtectedRoute>
           }
