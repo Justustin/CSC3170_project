@@ -16,6 +16,8 @@ import { Notifications } from './pages/patron/Notifications';
 import { ManageResources } from './pages/librarian/ManageResources';
 import { ManageUsers } from './pages/librarian/ManageUsers';
 import { Reports } from './pages/librarian/Reports';
+import { Borrowings } from './pages/librarian/Borrowings';
+import { Overdue } from './pages/librarian/Overdue';
 
 function App() {
   const { initializeAuth, isAuthenticated, user } = useAuthStore();
@@ -84,6 +86,22 @@ function App() {
           element={
             <ProtectedRoute allowedRoles={['Librarian']}>
               <Reports />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/librarian/borrowings"
+          element={
+            <ProtectedRoute allowedRoles={['Librarian']}>
+              <Borrowings />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/librarian/overdue"
+          element={
+            <ProtectedRoute allowedRoles={['Librarian']}>
+              <Overdue />
             </ProtectedRoute>
           }
         />

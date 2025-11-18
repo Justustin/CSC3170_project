@@ -50,4 +50,11 @@ router.get('/get-resources', librarianController.getResources);
 
 // Edit Resource
 router.put('/edit-resource/:id', librarianController.editResource);
+
+// Get All Borrowings
+router.get('/borrowings', librarianController.getAllBorrowings);
+
+// Get Overdue Items
+router.get('/overdue', librarianController.getOverdueItems);
+
 module.exports = router; // Ensure the router is exported directly

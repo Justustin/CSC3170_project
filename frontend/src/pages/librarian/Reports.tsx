@@ -94,7 +94,7 @@ export const Reports: React.FC = () => {
             value={reports?.active_borrowings || 0}
             icon={TrendingUp}
             gradient="bg-gradient-to-br from-purple-500 to-purple-600"
-            onClick={() => alert('Active borrowings details - Navigate to borrowings page')}
+            onClick={() => navigate('/librarian/borrowings')}
             delay={0.2}
           />
 
@@ -103,7 +103,7 @@ export const Reports: React.FC = () => {
             value={reports?.overdue_borrowings || 0}
             icon={Calendar}
             gradient="bg-gradient-to-br from-red-500 to-red-600"
-            onClick={() => alert('Overdue items details - Navigate to overdue page')}
+            onClick={() => navigate('/librarian/overdue')}
             delay={0.3}
           />
         </div>

@@ -499,3 +499,55 @@ exports.deleteUser = async (req, res) => {
         res.status(500).json({ error: 'Internal server error.' });
     }
 };
+
+// Get All Borrowings with User and Resource Details
+exports.getAllBorrowings = async (req, res) => {
+    try {
+        const { data, error } = await supabase
+            .from('borrowings')
+            .select(`
+                *,
+                users:user_id (username, email, first_name, last_name, phone_number),
+                resources:resource_id (title, author, isbn, resource_type)
+            `)
+            .order('borrow_date', { ascending: false });
+
+        if (error) {
+            console.error('Error fetching borrowings:', error);
+            return res.status(500).json({ error: 'Failed to fetch borrowings.' });
+        }
+
+        res.json(data || []);
+    } catch (err) {
+        console.error('Get all borrowings error:', err);
+        res.status(500).json({ error: 'Internal server error.' });
+    }
+};
+
+// Get Overdue Items with User and Resource Details
+exports.getOverdueItems = async (req, res) => {
+    try {
+        const today = new Date().toISOString().split('T')[0];
+
+        const { data, error } = await supabase
+            .from('borrowings')
+            .select(`
+                *,
+                users:user_id (username, email, first_name, last_name, phone_number),
+                resources:resource_id (title, author, isbn, resource_type)
+            `)
+            .eq('status', 'Active')
+            .lt('due_date', today)
+            .order('due_date', { ascending: true });
+
+        if (error) {
+            console.error('Error fetching overdue items:', error);
+            return res.status(500).json({ error: 'Failed to fetch overdue items.' });
+        }
+
+        res.json(data || []);
+    } catch (err) {
+        console.error('Get overdue items error:', err);
+        res.status(500).json({ error: 'Internal server error.' });
+    }
+};
