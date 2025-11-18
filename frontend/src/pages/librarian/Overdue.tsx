@@ -47,7 +47,7 @@ export const Overdue: React.FC = () => {
   const loadOverdueItems = async () => {
     setIsLoading(true);
     try {
-      const { data } = await api.get('/api/librarian/overdue');
+      const { data } = await api.get('/librarian/overdue');
       // Calculate days overdue for each item
       const itemsWithDays = data.map((item: any) => ({
         ...item,
@@ -78,7 +78,7 @@ export const Overdue: React.FC = () => {
   const sendReminder = async (userId: number, borrowingId: number, userName: string, bookTitle: string) => {
     setSendingNotification(borrowingId);
     try {
-      await api.post('/api/librarian/send-notification', {
+      await api.post('/librarian/send-notification', {
         user_id: userId,
         message: `Reminder: "${bookTitle}" is overdue. Please return it as soon as possible to avoid late fees.`
       });

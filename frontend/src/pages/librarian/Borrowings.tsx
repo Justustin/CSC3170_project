@@ -47,7 +47,7 @@ export const Borrowings: React.FC = () => {
     setIsLoading(true);
     try {
       // Fetch all borrowings with user and resource details
-      const { data } = await api.get('/api/librarian/borrowings');
+      const { data } = await api.get('/librarian/borrowings');
       setBorrowings(data);
     } catch (error) {
       console.error('Error loading borrowings:', error);
