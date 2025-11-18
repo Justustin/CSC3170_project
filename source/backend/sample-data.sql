@@ -1,20 +1,21 @@
 -- Additional Sample Data for Library Management System
 -- This file adds 30+ realistic records to test the system
+-- NOTE: Run this AFTER the main schema-supabase.sql
 
 -- Additional Users (Mix of Patrons and Librarians)
 INSERT INTO users (username, email, password_hash, role, first_name, last_name, phone_number) VALUES
-('alice_johnson', 'alice.johnson@email.com', '$2b$10$placeholder', 'Patron', 'Alice', 'Johnson', '555-0101'),
-('bob_smith', 'bob.smith@email.com', '$2b$10$placeholder', 'Patron', 'Bob', 'Smith', '555-0102'),
-('carol_white', 'carol.white@email.com', '$2b$10$placeholder', 'Patron', 'Carol', 'White', '555-0103'),
-('david_brown', 'david.brown@email.com', '$2b$10$placeholder', 'Patron', 'David', 'Brown', '555-0104'),
-('emma_davis', 'emma.davis@email.com', '$2b$10$placeholder', 'Patron', 'Emma', 'Davis', '555-0105'),
-('frank_miller', 'frank.miller@email.com', '$2b$10$placeholder', 'Patron', 'Frank', 'Miller', '555-0106'),
-('grace_wilson', 'grace.wilson@email.com', '$2b$10$placeholder', 'Patron', 'Grace', 'Wilson', '555-0107'),
-('henry_moore', 'henry.moore@email.com', '$2b$10$placeholder', 'Patron', 'Henry', 'Moore', '555-0108'),
-('isabel_taylor', 'isabel.taylor@email.com', '$2b$10$placeholder', 'Patron', 'Isabel', 'Taylor', '555-0109'),
-('jack_anderson', 'jack.anderson@email.com', '$2b$10$placeholder', 'Patron', 'Jack', 'Anderson', '555-0110'),
-('karen_thomas', 'karen.thomas@email.com', '$2b$10$placeholder', 'Librarian', 'Karen', 'Thomas', '555-0201'),
-('larry_jackson', 'larry.jackson@email.com', '$2b$10$placeholder', 'Librarian', 'Larry', 'Jackson', '555-0202')
+('alice_johnson', 'alice.johnson@email.com', '$2b$10$UF7gK9MHo3Mg3jrKTjn6f.mYt3HHS3KTF7mWRr/ZY1eZbf4.02CXC', 'Patron', 'Alice', 'Johnson', '555-0101'),
+('bob_smith', 'bob.smith@email.com', '$2b$10$UF7gK9MHo3Mg3jrKTjn6f.mYt3HHS3KTF7mWRr/ZY1eZbf4.02CXC', 'Patron', 'Bob', 'Smith', '555-0102'),
+('carol_white', 'carol.white@email.com', '$2b$10$UF7gK9MHo3Mg3jrKTjn6f.mYt3HHS3KTF7mWRr/ZY1eZbf4.02CXC', 'Patron', 'Carol', 'White', '555-0103'),
+('david_brown', 'david.brown@email.com', '$2b$10$UF7gK9MHo3Mg3jrKTjn6f.mYt3HHS3KTF7mWRr/ZY1eZbf4.02CXC', 'Patron', 'David', 'Brown', '555-0104'),
+('emma_davis', 'emma.davis@email.com', '$2b$10$UF7gK9MHo3Mg3jrKTjn6f.mYt3HHS3KTF7mWRr/ZY1eZbf4.02CXC', 'Patron', 'Emma', 'Davis', '555-0105'),
+('frank_miller', 'frank.miller@email.com', '$2b$10$UF7gK9MHo3Mg3jrKTjn6f.mYt3HHS3KTF7mWRr/ZY1eZbf4.02CXC', 'Patron', 'Frank', 'Miller', '555-0106'),
+('grace_wilson', 'grace.wilson@email.com', '$2b$10$UF7gK9MHo3Mg3jrKTjn6f.mYt3HHS3KTF7mWRr/ZY1eZbf4.02CXC', 'Patron', 'Grace', 'Wilson', '555-0107'),
+('henry_moore', 'henry.moore@email.com', '$2b$10$UF7gK9MHo3Mg3jrKTjn6f.mYt3HHS3KTF7mWRr/ZY1eZbf4.02CXC', 'Patron', 'Henry', 'Moore', '555-0108'),
+('isabel_taylor', 'isabel.taylor@email.com', '$2b$10$UF7gK9MHo3Mg3jrKTjn6f.mYt3HHS3KTF7mWRr/ZY1eZbf4.02CXC', 'Patron', 'Isabel', 'Taylor', '555-0109'),
+('jack_anderson', 'jack.anderson@email.com', '$2b$10$UF7gK9MHo3Mg3jrKTjn6f.mYt3HHS3KTF7mWRr/ZY1eZbf4.02CXC', 'Patron', 'Jack', 'Anderson', '555-0110'),
+('karen_thomas', 'karen.thomas@email.com', '$2b$10$UF7gK9MHo3Mg3jrKTjn6f.mYt3HHS3KTF7mWRr/ZY1eZbf4.02CXC', 'Librarian', 'Karen', 'Thomas', '555-0201'),
+('larry_jackson', 'larry.jackson@email.com', '$2b$10$UF7gK9MHo3Mg3jrKTjn6f.mYt3HHS3KTF7mWRr/ZY1eZbf4.02CXC', 'Librarian', 'Larry', 'Jackson', '555-0202')
 ON CONFLICT (username) DO NOTHING;
 
 -- Additional Books and Resources (40+ books)
@@ -70,47 +71,132 @@ INSERT INTO resources (title, author, isbn, publication_year, genre, resource_ty
 ('Economics Quarterly Review', 'Economic Society', '978-0-000-00005-5', 2024, 'Economics', 'Journal', 2, 2, 'Economic Publishers', 'Economic theory and policy')
 ON CONFLICT (isbn) DO NOTHING;
 
--- Sample Borrowings (Mix of active, returned, and overdue)
-INSERT INTO borrowings (user_id, resource_id, borrow_date, due_date, return_date, renewals, status) VALUES
--- Active borrowings
-(3, 5, CURRENT_DATE - INTERVAL '3 days', CURRENT_DATE + INTERVAL '11 days', NULL, 0, 'Active'),
-(4, 6, CURRENT_DATE - INTERVAL '5 days', CURRENT_DATE + INTERVAL '9 days', NULL, 1, 'Active'),
-(5, 7, CURRENT_DATE - INTERVAL '7 days', CURRENT_DATE + INTERVAL '7 days', NULL, 0, 'Active'),
-(6, 8, CURRENT_DATE - INTERVAL '2 days', CURRENT_DATE + INTERVAL '12 days', NULL, 0, 'Active'),
--- Overdue borrowings
-(7, 9, CURRENT_DATE - INTERVAL '20 days', CURRENT_DATE - INTERVAL '6 days', NULL, 0, 'Active'),
-(8, 10, CURRENT_DATE - INTERVAL '35 days', CURRENT_DATE - INTERVAL '21 days', NULL, 2, 'Active'),
--- Returned borrowings
-(9, 11, CURRENT_DATE - INTERVAL '30 days', CURRENT_DATE - INTERVAL '16 days', CURRENT_DATE - INTERVAL '15 days', 1, 'Returned'),
-(10, 12, CURRENT_DATE - INTERVAL '25 days', CURRENT_DATE - INTERVAL '11 days', CURRENT_DATE - INTERVAL '10 days', 0, 'Returned'),
-(11, 13, CURRENT_DATE - INTERVAL '45 days', CURRENT_DATE - INTERVAL '31 days', CURRENT_DATE - INTERVAL '28 days', 1, 'Returned')
-ON CONFLICT DO NOTHING;
+-- Sample Borrowings using actual user references
+-- Get resource IDs and user IDs dynamically
+DO $$
+DECLARE
+    v_user_alice INTEGER;
+    v_user_bob INTEGER;
+    v_user_carol INTEGER;
+    v_user_david INTEGER;
+    v_user_emma INTEGER;
+    v_resource_hp INTEGER;
+    v_resource_hobbit INTEGER;
+    v_resource_catcher INTEGER;
+    v_resource_flies INTEGER;
+    v_resource_animal INTEGER;
+BEGIN
+    -- Get user IDs
+    SELECT user_id INTO v_user_alice FROM users WHERE username = 'alice_johnson';
+    SELECT user_id INTO v_user_bob FROM users WHERE username = 'bob_smith';
+    SELECT user_id INTO v_user_carol FROM users WHERE username = 'carol_white';
+    SELECT user_id INTO v_user_david FROM users WHERE username = 'david_brown';
+    SELECT user_id INTO v_user_emma FROM users WHERE username = 'emma_davis';
 
--- Sample Reservations
-INSERT INTO reservations (user_id, resource_id, status) VALUES
-(12, 5, 'Pending'),
-(13, 6, 'Pending'),
-(4, 7, 'Fulfilled')
-ON CONFLICT DO NOTHING;
+    -- Get resource IDs
+    SELECT resource_id INTO v_resource_hp FROM resources WHERE isbn = '978-0-439-70818-8';
+    SELECT resource_id INTO v_resource_hobbit FROM resources WHERE isbn = '978-0-547-92822-7';
+    SELECT resource_id INTO v_resource_catcher FROM resources WHERE isbn = '978-0-316-76948-0';
+    SELECT resource_id INTO v_resource_flies FROM resources WHERE isbn = '978-0-399-50148-7';
+    SELECT resource_id INTO v_resource_animal FROM resources WHERE isbn = '978-0-452-28424-1';
+
+    -- Insert sample borrowings only if users and resources exist
+    IF v_user_alice IS NOT NULL AND v_resource_hp IS NOT NULL THEN
+        INSERT INTO borrowings (user_id, resource_id, borrow_date, due_date, return_date, renewals, status)
+        VALUES (v_user_alice, v_resource_hp, CURRENT_DATE - INTERVAL '3 days', CURRENT_DATE + INTERVAL '11 days', NULL, 0, 'Active')
+        ON CONFLICT DO NOTHING;
+    END IF;
+
+    IF v_user_bob IS NOT NULL AND v_resource_hobbit IS NOT NULL THEN
+        INSERT INTO borrowings (user_id, resource_id, borrow_date, due_date, return_date, renewals, status)
+        VALUES (v_user_bob, v_resource_hobbit, CURRENT_DATE - INTERVAL '5 days', CURRENT_DATE + INTERVAL '9 days', NULL, 1, 'Active')
+        ON CONFLICT DO NOTHING;
+    END IF;
+
+    IF v_user_carol IS NOT NULL AND v_resource_catcher IS NOT NULL THEN
+        -- Overdue borrowing
+        INSERT INTO borrowings (user_id, resource_id, borrow_date, due_date, return_date, renewals, status)
+        VALUES (v_user_carol, v_resource_catcher, CURRENT_DATE - INTERVAL '20 days', CURRENT_DATE - INTERVAL '6 days', NULL, 0, 'Active')
+        ON CONFLICT DO NOTHING;
+    END IF;
+
+    IF v_user_david IS NOT NULL AND v_resource_flies IS NOT NULL THEN
+        -- Returned borrowing
+        INSERT INTO borrowings (user_id, resource_id, borrow_date, due_date, return_date, renewals, status)
+        VALUES (v_user_david, v_resource_flies, CURRENT_DATE - INTERVAL '30 days', CURRENT_DATE - INTERVAL '16 days', CURRENT_DATE - INTERVAL '15 days', 1, 'Returned')
+        ON CONFLICT DO NOTHING;
+    END IF;
+
+    IF v_user_emma IS NOT NULL AND v_resource_animal IS NOT NULL THEN
+        -- Active borrowing
+        INSERT INTO borrowings (user_id, resource_id, borrow_date, due_date, return_date, renewals, status)
+        VALUES (v_user_emma, v_resource_animal, CURRENT_DATE - INTERVAL '7 days', CURRENT_DATE + INTERVAL '7 days', NULL, 0, 'Active')
+        ON CONFLICT DO NOTHING;
+    END IF;
+END $$;
 
 -- Sample Notifications
-INSERT INTO notifications (user_id, message, is_read) VALUES
-(3, 'Your book "Harry Potter and the Sorcerers Stone" is due in 3 days.', false),
-(4, 'Your book has been renewed successfully. New due date: ' || (CURRENT_DATE + INTERVAL '9 days')::date, false),
-(7, 'Reminder: Your book is overdue. Please return it as soon as possible.', false),
-(9, 'Thank you for returning your book on time!', true),
-(12, 'Your reserved book "Harry Potter and the Sorcerers Stone" is now available.', false)
-ON CONFLICT DO NOTHING;
+DO $$
+DECLARE
+    v_user_alice INTEGER;
+    v_user_bob INTEGER;
+    v_user_carol INTEGER;
+BEGIN
+    SELECT user_id INTO v_user_alice FROM users WHERE username = 'alice_johnson';
+    SELECT user_id INTO v_user_bob FROM users WHERE username = 'bob_smith';
+    SELECT user_id INTO v_user_carol FROM users WHERE username = 'carol_white';
+
+    IF v_user_alice IS NOT NULL THEN
+        INSERT INTO notifications (user_id, message, is_read)
+        VALUES (v_user_alice, 'Your book "Harry Potter and the Sorcerers Stone" is due in 3 days.', false)
+        ON CONFLICT DO NOTHING;
+    END IF;
+
+    IF v_user_bob IS NOT NULL THEN
+        INSERT INTO notifications (user_id, message, is_read)
+        VALUES (v_user_bob, 'Your book has been renewed successfully. New due date: ' || (CURRENT_DATE + INTERVAL '9 days')::date, false)
+        ON CONFLICT DO NOTHING;
+    END IF;
+
+    IF v_user_carol IS NOT NULL THEN
+        INSERT INTO notifications (user_id, message, is_read)
+        VALUES (v_user_carol, 'Reminder: Your book is overdue. Please return it as soon as possible.', false)
+        ON CONFLICT DO NOTHING;
+    END IF;
+END $$;
 
 -- Sample Library Logs
-INSERT INTO library_logs (user_id, action, entity_type, entity_id, description) VALUES
-(1, 'LOGIN', 'USER', 1, 'Director logged in'),
-(2, 'LOGIN', 'USER', 2, 'Librarian Jane Doe logged in'),
-(3, 'BORROW_RESOURCE', 'RESOURCE', 5, 'Patron Alice Johnson borrowed "Harry Potter and the Sorcerers Stone"'),
-(4, 'RENEW_BORROWING', 'BORROWING', 2, 'Patron Bob Smith renewed borrowing'),
-(2, 'ADD_RESOURCE', 'RESOURCE', 40, 'Librarian added new book "The Midnight Library"'),
-(2, 'UPDATE_USER', 'USER', 5, 'Librarian updated patron Emma Davis information'),
-(9, 'RETURN_RESOURCE', 'RESOURCE', 11, 'Patron Isabel Taylor returned book'),
-(1, 'CREATE_LIBRARIAN', 'USER', 11, 'Director created new librarian account'),
-(3, 'RESERVE_RESOURCE', 'RESOURCE', 8, 'Patron Alice Johnson reserved a book')
-ON CONFLICT DO NOTHING;
+DO $$
+DECLARE
+    v_director INTEGER;
+    v_librarian INTEGER;
+    v_alice INTEGER;
+BEGIN
+    SELECT user_id INTO v_director FROM users WHERE username = 'director';
+    SELECT user_id INTO v_librarian FROM users WHERE username = 'librarian';
+    SELECT user_id INTO v_alice FROM users WHERE username = 'alice_johnson';
+
+    IF v_director IS NOT NULL THEN
+        INSERT INTO library_logs (user_id, action, entity_type, description)
+        VALUES (v_director, 'LOGIN', 'USER', 'Director logged in');
+    END IF;
+
+    IF v_librarian IS NOT NULL THEN
+        INSERT INTO library_logs (user_id, action, entity_type, description)
+        VALUES (v_librarian, 'LOGIN', 'USER', 'Librarian logged in');
+
+        INSERT INTO library_logs (user_id, action, entity_type, description)
+        VALUES (v_librarian, 'ADD_RESOURCE', 'RESOURCE', 'Librarian added new book');
+    END IF;
+
+    IF v_alice IS NOT NULL THEN
+        INSERT INTO library_logs (user_id, action, entity_type, description)
+        VALUES (v_alice, 'BORROW_RESOURCE', 'RESOURCE', 'Patron borrowed book');
+    END IF;
+END $$;
+
+-- Display summary
+SELECT 'Sample data loaded successfully!' AS status,
+       (SELECT COUNT(*) FROM users) AS total_users,
+       (SELECT COUNT(*) FROM resources) AS total_resources,
+       (SELECT COUNT(*) FROM borrowings) AS total_borrowings;
