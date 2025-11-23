@@ -49,6 +49,29 @@ export const Navbar: React.FC = () => {
               </>
             )}
 
+            {user?.role === 'Director' && (
+              <>
+                <Link
+                  to="/director/dashboard"
+                  className="text-gray-700 hover:text-primary-600 font-medium transition-colors"
+                >
+                  Dashboard
+                </Link>
+                <Link
+                  to="/librarian/resources"
+                  className="text-gray-700 hover:text-primary-600 font-medium transition-colors"
+                >
+                  Resources
+                </Link>
+                <Link
+                  to="/librarian/reports"
+                  className="text-gray-700 hover:text-primary-600 font-medium transition-colors"
+                >
+                  Reports
+                </Link>
+              </>
+            )}
+
             {user?.role === 'Librarian' && (
               <>
                 <Link

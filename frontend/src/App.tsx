@@ -19,6 +19,9 @@ import { Reports } from './pages/librarian/Reports';
 import { Borrowings } from './pages/librarian/Borrowings';
 import { Overdue } from './pages/librarian/Overdue';
 
+// Director pages
+import { DirectorDashboard } from './pages/director/DirectorDashboard';
+
 function App() {
   const { initializeAuth, isAuthenticated, user } = useAuthStore();
 
@@ -28,7 +31,10 @@ function App() {
 
   const getDefaultRoute = () => {
     if (!isAuthenticated) return '/login';
-    if (user?.role === 'Director' || user?.role === 'Librarian') {
+    if (user?.role === 'Director') {
+      return '/director/dashboard';
+    }
+    if (user?.role === 'Librarian') {
       return '/librarian/resources';
     }
     return '/patron/search';
@@ -63,6 +69,16 @@ function App() {
           element={
             <ProtectedRoute allowedRoles={['Patron']}>
               <Notifications />
+            </ProtectedRoute>
+          }
+        />
+
+        {/* Director routes */}
+        <Route
+          path="/director/dashboard"
+          element={
+            <ProtectedRoute allowedRoles={['Director']}>
+              <DirectorDashboard />
             </ProtectedRoute>
           }
         />
