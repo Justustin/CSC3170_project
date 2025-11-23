@@ -55,6 +55,16 @@ export const librarianAPI = {
     return response.data;
   },
 
+  getAllBorrowings: async () => {
+    const response = await axiosInstance.get('/librarian/borrowings');
+    return response.data;
+  },
+
+  getOverdueItems: async () => {
+    const response = await axiosInstance.get('/librarian/overdue');
+    return response.data;
+  },
+
   // Inventory and reports
   trackInventory: async () => {
     const response = await axiosInstance.get('/librarian/track-inventory');
