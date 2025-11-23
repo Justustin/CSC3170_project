@@ -56,30 +56,20 @@ export const Borrowings: React.FC = () => {
     }
   };
 
-  const isOverdue = (b: Borrowing) => {
-    if (b.status !== 'Active') return false;
-    // Parse dates as local dates to avoid timezone issues
-    const today = new Date();
-    const todayStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
-    return b.due_date < todayStr;
-  };
-
   const filterBorrowings = () => {
     let filtered = borrowings;
 
     // Filter by status
-    if (statusFilter === 'Overdue') {
-      filtered = filtered.filter(b => isOverdue(b));
-    } else if (statusFilter !== 'All') {
+    if (statusFilter !== 'All') {
       filtered = filtered.filter(b => b.status === statusFilter);
     }
 
     // Filter by search term
     if (searchTerm) {
       filtered = filtered.filter(b =>
-        b.resources?.title?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        b.users?.username?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        b.users?.email?.toLowerCase().includes(searchTerm.toLowerCase())
+        b.resources?.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        b.users?.username.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        b.users?.email.toLowerCase().includes(searchTerm.toLowerCase())
       );
     }
 
@@ -126,7 +116,7 @@ export const Borrowings: React.FC = () => {
     total: borrowings.length,
     active: borrowings.filter(b => b.status === 'Active').length,
     returned: borrowings.filter(b => b.status === 'Returned').length,
-    overdue: borrowings.filter(b => isOverdue(b)).length
+    overdue: borrowings.filter(b => b.status === 'Overdue').length
   };
 
   return (
