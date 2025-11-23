@@ -58,4 +58,7 @@ router.get('/borrowings', librarianController.getAllBorrowings);
 // Get Overdue Items
 router.get('/overdue', librarianController.getOverdueItems);
 
+// Get Library Logs
+router.get('/logs', librarianController.getLibraryLogs);
+
 module.exports = router; // Ensure the router is exported directly

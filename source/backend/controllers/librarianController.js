@@ -543,3 +543,24 @@ exports.getOverdueItems = async (req, res) => {
         res.status(500).json({ error: 'Internal server error.' });
     }
 };
+
+// Get Library Logs
+exports.getLibraryLogs = async (req, res) => {
+    try {
+        const { data, error } = await supabase
+            .from('library_logs')
+            .select('*, users(username)')
+            .order('created_at', { ascending: false })
+            .limit(100);
+
+        if (error) {
+            console.error('Error fetching library logs:', error);
+            return res.status(500).json({ error: 'Failed to fetch library logs.' });
+        }
+
+        res.json(data || []);
+    } catch (err) {
+        console.error('Get library logs error:', err);
+        res.status(500).json({ error: 'Internal server error.' });
+    }
+};

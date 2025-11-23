@@ -64,10 +64,28 @@ export const Navbar: React.FC = () => {
                   Resources
                 </Link>
                 <Link
+                  to="/librarian/users"
+                  className="text-gray-700 hover:text-primary-600 font-medium transition-colors"
+                >
+                  Users
+                </Link>
+                <Link
+                  to="/librarian/borrowings"
+                  className="text-gray-700 hover:text-primary-600 font-medium transition-colors"
+                >
+                  Borrowings
+                </Link>
+                <Link
                   to="/librarian/reports"
                   className="text-gray-700 hover:text-primary-600 font-medium transition-colors"
                 >
                   Reports
+                </Link>
+                <Link
+                  to="/librarian/logs"
+                  className="text-gray-700 hover:text-primary-600 font-medium transition-colors"
+                >
+                  Logs
                 </Link>
               </>
             )}
@@ -87,10 +105,22 @@ export const Navbar: React.FC = () => {
                   Users
                 </Link>
                 <Link
+                  to="/librarian/borrowings"
+                  className="text-gray-700 hover:text-primary-600 font-medium transition-colors"
+                >
+                  Borrowings
+                </Link>
+                <Link
                   to="/librarian/reports"
                   className="text-gray-700 hover:text-primary-600 font-medium transition-colors"
                 >
                   Reports
+                </Link>
+                <Link
+                  to="/librarian/logs"
+                  className="text-gray-700 hover:text-primary-600 font-medium transition-colors"
+                >
+                  Logs
                 </Link>
               </>
             )}

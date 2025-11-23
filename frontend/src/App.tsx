@@ -18,6 +18,7 @@ import { ManageUsers } from './pages/librarian/ManageUsers';
 import { Reports } from './pages/librarian/Reports';
 import { Borrowings } from './pages/librarian/Borrowings';
 import { Overdue } from './pages/librarian/Overdue';
+import { LibraryLogs } from './pages/librarian/LibraryLogs';
 
 // Director pages
 import { DirectorDashboard } from './pages/director/DirectorDashboard';
@@ -121,6 +122,14 @@ function App() {
           element={
             <ProtectedRoute allowedRoles={['Librarian', 'Director']}>
               <Overdue />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/librarian/logs"
+          element={
+            <ProtectedRoute allowedRoles={['Librarian', 'Director']}>
+              <LibraryLogs />
             </ProtectedRoute>
           }
         />

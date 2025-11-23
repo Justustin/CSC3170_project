@@ -24,7 +24,9 @@ export const Login: React.FC = () => {
       const user = JSON.parse(localStorage.getItem('user') || '{}');
 
       // Redirect based on role
-      if (user.role === 'Librarian') {
+      if (user.role === 'Director') {
+        navigate('/director/dashboard');
+      } else if (user.role === 'Librarian') {
         navigate('/librarian/resources');
       } else {
         navigate('/patron/search');

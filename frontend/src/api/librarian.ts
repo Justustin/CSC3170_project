@@ -65,6 +65,11 @@ export const librarianAPI = {
     return response.data;
   },
 
+  getLibraryLogs: async () => {
+    const response = await axiosInstance.get('/librarian/logs');
+    return response.data;
+  },
+
   // Inventory and reports
   trackInventory: async () => {
     const response = await axiosInstance.get('/librarian/track-inventory');
