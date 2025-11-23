@@ -523,7 +523,11 @@ exports.getAllBorrowings = async (req, res) => {
 // Get Overdue Items with User and Resource Details
 exports.getOverdueItems = async (req, res) => {
     try {
-        const today = new Date().toISOString().split('T')[0];
+        // Use local date instead of UTC to avoid timezone issues
+        const now = new Date();
+        const today = now.getFullYear() + '-' +
+            String(now.getMonth() + 1).padStart(2, '0') + '-' +
+            String(now.getDate()).padStart(2, '0');
 
         const { data, error } = await supabase
             .from('borrowings')
