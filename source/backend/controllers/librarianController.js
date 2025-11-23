@@ -38,7 +38,7 @@ exports.addResource = async (req, res) => {
         await supabase.from('library_logs').insert([{
             user_id: req.user.user_id,
             action: 'ADD_RESOURCE',
-            details: `Added resource: ${title} (ID: ${data.resource_id})`
+            description: `Added resource: ${title} (ID: ${data.resource_id})`
         }]);
 
         res.status(201).json({ message: 'Resource added successfully.', resource: data });
@@ -134,7 +134,7 @@ exports.editResource = async (req, res) => {
         await supabase.from('library_logs').insert([{
             user_id: req.user.user_id,
             action: 'UPDATE_RESOURCE',
-            details: `Updated resource: ${title} (ID: ${resourceId})`
+            description: `Updated resource: ${title} (ID: ${resourceId})`
         }]);
 
         res.json({ message: 'Resource updated successfully.' });
@@ -163,7 +163,7 @@ exports.deleteResource = async (req, res) => {
         await supabase.from('library_logs').insert([{
             user_id: req.user.user_id,
             action: 'DELETE_RESOURCE',
-            details: `Deleted resource ID: ${resourceId}`
+            description: `Deleted resource ID: ${resourceId}`
         }]);
 
         res.json({ message: 'Resource deleted successfully.' });
@@ -246,7 +246,7 @@ exports.manageBorrowing = async (req, res) => {
         await supabase.from('library_logs').insert([{
             user_id: req.user.user_id,
             action: 'MANAGE_BORROWING',
-            details: `Updated borrowing ID: ${borrowingId} to status: ${status}`
+            description: `Updated borrowing ID: ${borrowingId} to status: ${status}`
         }]);
 
         res.json({ message: 'Borrowing status updated successfully.' });
@@ -487,7 +487,7 @@ exports.createUser = async (req, res) => {
         await supabase.from('library_logs').insert([{
             user_id: req.user.user_id,
             action: 'CREATE_USER',
-            details: `Created user: ${username} (ID: ${data.user_id}) with role: ${role}`
+            description: `Created user: ${username} (ID: ${data.user_id}) with role: ${role}`
         }]);
 
         res.status(201).json({ message: 'User account created successfully.', user: data });
@@ -546,7 +546,7 @@ exports.manageUser = async (req, res) => {
         await supabase.from('library_logs').insert([{
             user_id: req.user.user_id,
             action: 'UPDATE_USER',
-            details: `Updated user: ${username} (ID: ${userId})`
+            description: `Updated user: ${username} (ID: ${userId})`
         }]);
 
         res.json({ message: 'User account updated successfully.' });
@@ -575,7 +575,7 @@ exports.deleteUser = async (req, res) => {
         await supabase.from('library_logs').insert([{
             user_id: req.user.user_id,
             action: 'DELETE_USER',
-            details: `Deleted user ID: ${userId}`
+            description: `Deleted user ID: ${userId}`
         }]);
 
         res.json({ message: 'User account deleted successfully.' });

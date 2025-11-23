@@ -100,7 +100,7 @@ exports.login = async (req, res) => {
         await supabase.from('library_logs').insert([{
             user_id: user.user_id,
             action: 'LOGIN',
-            details: `User ${user.username} logged in`
+            description: `User ${user.username} logged in`
         }]);
 
         res.status(200).json({

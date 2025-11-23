@@ -7,7 +7,7 @@ interface LogEntry {
   log_id: number;
   user_id: number;
   action: string;
-  details: string;
+  description: string;
   created_at: string;
   users?: {
     username: string;
@@ -31,7 +31,7 @@ export const LibraryLogs: React.FC = () => {
       const filtered = logs.filter(
         (log) =>
           log.action.toLowerCase().includes(searchQuery.toLowerCase()) ||
-          log.details?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+          log.description?.toLowerCase().includes(searchQuery.toLowerCase()) ||
           log.users?.username?.toLowerCase().includes(searchQuery.toLowerCase())
       );
       setFilteredLogs(filtered);
@@ -114,7 +114,7 @@ export const LibraryLogs: React.FC = () => {
                     Action
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Details
+                    Description
                   </th>
                 </tr>
               </thead>
@@ -135,7 +135,7 @@ export const LibraryLogs: React.FC = () => {
                       </span>
                     </td>
                     <td className="px-6 py-4 text-sm text-gray-500 max-w-md">
-                      {log.details || '-'}
+                      {log.description || '-'}
                     </td>
                   </tr>
                 ))}

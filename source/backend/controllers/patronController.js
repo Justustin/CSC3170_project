@@ -98,7 +98,7 @@ exports.borrowResource = async (req, res) => {
         await supabase.from('library_logs').insert([{
             user_id,
             action: 'BORROW',
-            details: `Borrowed resource: ${resource.title} (ID: ${resource_id})`
+            description: `Borrowed resource: ${resource.title} (ID: ${resource_id})`
         }]);
 
         res.status(200).json({
@@ -276,7 +276,7 @@ exports.renewBorrowing = async (req, res) => {
         await supabase.from('library_logs').insert([{
             user_id: userId,
             action: 'RENEW',
-            details: `Renewed borrowing ID: ${borrowingId}, new due date: ${newDueDate}`
+            description: `Renewed borrowing ID: ${borrowingId}, new due date: ${newDueDate}`
         }]);
 
         res.json({
@@ -351,7 +351,7 @@ exports.returnBorrowing = async (req, res) => {
         await supabase.from('library_logs').insert([{
             user_id: userId,
             action: 'RETURN',
-            details: `Returned resource: ${borrowing.resources.title} (ID: ${borrowing.resource_id})`
+            description: `Returned resource: ${borrowing.resources.title} (ID: ${borrowing.resource_id})`
         }]);
 
         res.json({
