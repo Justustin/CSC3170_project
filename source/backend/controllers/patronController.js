@@ -94,6 +94,13 @@ exports.borrowResource = async (req, res) => {
             return res.status(500).json({ error: 'Failed to update resource availability.' });
         }
 
+        // Log the borrowing
+        await supabase.from('library_logs').insert([{
+            user_id,
+            action: 'BORROW',
+            details: `Borrowed resource: ${resource.title} (ID: ${resource_id})`
+        }]);
+
         res.status(200).json({
             message: 'Resource borrowed successfully.',
             due_date: dueDateStr,
@@ -265,6 +272,13 @@ exports.renewBorrowing = async (req, res) => {
             return res.status(500).json({ error: 'Failed to renew borrowing.' });
         }
 
+        // Log the renewal
+        await supabase.from('library_logs').insert([{
+            user_id: userId,
+            action: 'RENEW',
+            details: `Renewed borrowing ID: ${borrowingId}, new due date: ${newDueDate}`
+        }]);
+
         res.json({
             message: 'Borrowing renewed successfully.',
             new_due_date: newDueDate,
@@ -332,6 +346,13 @@ exports.returnBorrowing = async (req, res) => {
                 warning: 'Resource availability update failed'
             });
         }
+
+        // Log the return
+        await supabase.from('library_logs').insert([{
+            user_id: userId,
+            action: 'RETURN',
+            details: `Returned resource: ${borrowing.resources.title} (ID: ${borrowing.resource_id})`
+        }]);
 
         res.json({
             message: 'Book returned successfully.',

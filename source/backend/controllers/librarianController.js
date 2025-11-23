@@ -34,6 +34,13 @@ exports.addResource = async (req, res) => {
             return res.status(500).json({ error: 'Failed to add resource.' });
         }
 
+        // Log the action
+        await supabase.from('library_logs').insert([{
+            user_id: req.user.user_id,
+            action: 'ADD_RESOURCE',
+            details: `Added resource: ${title} (ID: ${data.resource_id})`
+        }]);
+
         res.status(201).json({ message: 'Resource added successfully.', resource: data });
     } catch (err) {
         console.error('Add resource error:', err);
@@ -123,6 +130,13 @@ exports.editResource = async (req, res) => {
             return res.status(404).json({ error: 'Resource not found.' });
         }
 
+        // Log the action
+        await supabase.from('library_logs').insert([{
+            user_id: req.user.user_id,
+            action: 'UPDATE_RESOURCE',
+            details: `Updated resource: ${title} (ID: ${resourceId})`
+        }]);
+
         res.json({ message: 'Resource updated successfully.' });
     } catch (err) {
         console.error('Edit resource error:', err);
@@ -144,6 +158,13 @@ exports.deleteResource = async (req, res) => {
             console.error('Error deleting resource:', error);
             return res.status(500).json({ error: 'Failed to delete resource.' });
         }
+
+        // Log the action
+        await supabase.from('library_logs').insert([{
+            user_id: req.user.user_id,
+            action: 'DELETE_RESOURCE',
+            details: `Deleted resource ID: ${resourceId}`
+        }]);
 
         res.json({ message: 'Resource deleted successfully.' });
     } catch (err) {
@@ -220,6 +241,13 @@ exports.manageBorrowing = async (req, res) => {
                 // Continue anyway - borrowing status is updated
             }
         }
+
+        // Log the action
+        await supabase.from('library_logs').insert([{
+            user_id: req.user.user_id,
+            action: 'MANAGE_BORROWING',
+            details: `Updated borrowing ID: ${borrowingId} to status: ${status}`
+        }]);
 
         res.json({ message: 'Borrowing status updated successfully.' });
     } catch (err) {
@@ -455,6 +483,13 @@ exports.createUser = async (req, res) => {
             return res.status(500).json({ error: 'Failed to create user.' });
         }
 
+        // Log the action
+        await supabase.from('library_logs').insert([{
+            user_id: req.user.user_id,
+            action: 'CREATE_USER',
+            details: `Created user: ${username} (ID: ${data.user_id}) with role: ${role}`
+        }]);
+
         res.status(201).json({ message: 'User account created successfully.', user: data });
     } catch (err) {
         console.error('Create user error:', err);
@@ -507,6 +542,13 @@ exports.manageUser = async (req, res) => {
             return res.status(404).json({ error: 'User not found.' });
         }
 
+        // Log the action
+        await supabase.from('library_logs').insert([{
+            user_id: req.user.user_id,
+            action: 'UPDATE_USER',
+            details: `Updated user: ${username} (ID: ${userId})`
+        }]);
+
         res.json({ message: 'User account updated successfully.' });
     } catch (err) {
         console.error('Manage user error:', err);
@@ -528,6 +570,13 @@ exports.deleteUser = async (req, res) => {
             console.error('Error deleting user:', error);
             return res.status(500).json({ error: 'Failed to delete user.' });
         }
+
+        // Log the action
+        await supabase.from('library_logs').insert([{
+            user_id: req.user.user_id,
+            action: 'DELETE_USER',
+            details: `Deleted user ID: ${userId}`
+        }]);
 
         res.json({ message: 'User account deleted successfully.' });
     } catch (err) {

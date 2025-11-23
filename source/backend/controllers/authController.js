@@ -96,6 +96,13 @@ exports.login = async (req, res) => {
         // Remove password from response
         delete user.password_hash;
 
+        // Log the login
+        await supabase.from('library_logs').insert([{
+            user_id: user.user_id,
+            action: 'LOGIN',
+            details: `User ${user.username} logged in`
+        }]);
+
         res.status(200).json({
             message: 'Login successful.',
             token,
