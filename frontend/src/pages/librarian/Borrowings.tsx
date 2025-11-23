@@ -56,11 +56,22 @@ export const Borrowings: React.FC = () => {
     }
   };
 
+  const isOverdue = (b: Borrowing) => {
+    if (b.status !== 'Active') return false;
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const dueDate = new Date(b.due_date);
+    dueDate.setHours(0, 0, 0, 0);
+    return dueDate < today;
+  };
+
   const filterBorrowings = () => {
     let filtered = borrowings;
 
     // Filter by status
-    if (statusFilter !== 'All') {
+    if (statusFilter === 'Overdue') {
+      filtered = filtered.filter(b => isOverdue(b));
+    } else if (statusFilter !== 'All') {
       filtered = filtered.filter(b => b.status === statusFilter);
     }
 
@@ -116,14 +127,7 @@ export const Borrowings: React.FC = () => {
     total: borrowings.length,
     active: borrowings.filter(b => b.status === 'Active').length,
     returned: borrowings.filter(b => b.status === 'Returned').length,
-    overdue: borrowings.filter(b => {
-      if (b.status !== 'Active') return false;
-      const today = new Date();
-      today.setHours(0, 0, 0, 0);
-      const dueDate = new Date(b.due_date);
-      dueDate.setHours(0, 0, 0, 0);
-      return dueDate < today;
-    }).length
+    overdue: borrowings.filter(b => isOverdue(b)).length
   };
 
   return (
