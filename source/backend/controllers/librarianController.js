@@ -1,18 +1,19 @@
 // backend/controllers/librarianController.js
+// Pengontrol untuk fungsi pustakawan perpustakaan
 
 const supabase = require('../config/supabase');
 const bcrypt = require('bcrypt');
 
-// Add New Resource
+// Tambah Sumber Daya Baru
 exports.addResource = async (req, res) => {
     try {
         const { title, author, isbn, resource_type, total_copies, available_copies, genre, publication_year, publisher, description } = req.body;
 
         if (!title || !author || !resource_type) {
-            return res.status(400).json({ error: 'Please enter all required fields.' });
+            return res.status(400).json({ error: 'Mohon masukkan semua field yang diperlukan.' });
         }
 
-        const { data, error } = await supabase
+        const { data: dataSumber, error: kesalahan } = await supabase
             .from('resources')
             .insert([{
                 title,
@@ -29,25 +30,25 @@ exports.addResource = async (req, res) => {
             .select()
             .single();
 
-        if (error) {
-            console.error('Error adding resource:', error);
-            return res.status(500).json({ error: 'Failed to add resource.' });
+        if (kesalahan) {
+            console.error('Kesalahan menambah sumber daya:', kesalahan);
+            return res.status(500).json({ error: 'Gagal menambah sumber daya.' });
         }
 
-        res.status(201).json({ message: 'Resource added successfully.', resource: data });
+        res.status(201).json({ message: 'Sumber daya berhasil ditambahkan.', resource: dataSumber });
     } catch (err) {
-        console.error('Add resource error:', err);
-        res.status(500).json({ error: 'Internal server error.' });
+        console.error('Kesalahan tambah sumber daya:', err);
+        res.status(500).json({ error: 'Kesalahan server internal.' });
     }
 };
 
-// Update Resource
+// Perbarui Sumber Daya
 exports.updateResource = async (req, res) => {
     try {
-        const resourceId = req.params.id;
+        const idSumberDaya = req.params.id;
         const { title, author, isbn, resource_type, total_copies, available_copies, genre, publication_year, publisher, description } = req.body;
 
-        const { error } = await supabase
+        const { error: kesalahan } = await supabase
             .from('resources')
             .update({
                 title,
@@ -61,40 +62,40 @@ exports.updateResource = async (req, res) => {
                 publisher,
                 description
             })
-            .eq('resource_id', resourceId);
+            .eq('resource_id', idSumberDaya);
 
-        if (error) {
-            console.error('Error updating resource:', error);
-            return res.status(500).json({ error: 'Failed to update resource.' });
+        if (kesalahan) {
+            console.error('Kesalahan memperbarui sumber daya:', kesalahan);
+            return res.status(500).json({ error: 'Gagal memperbarui sumber daya.' });
         }
 
-        res.json({ message: 'Resource updated successfully.' });
+        res.json({ message: 'Sumber daya berhasil diperbarui.' });
     } catch (err) {
-        console.error('Update resource error:', err);
-        res.status(500).json({ error: 'Internal server error.' });
+        console.error('Kesalahan perbarui sumber daya:', err);
+        res.status(500).json({ error: 'Kesalahan server internal.' });
     }
 };
 
-// Edit Resource
+// Edit Sumber Daya
 exports.editResource = async (req, res) => {
     try {
-        const resourceId = req.params.id;
+        const idSumberDaya = req.params.id;
         const { title, author, isbn, resource_type, total_copies, available_copies, genre, publication_year, publisher, description } = req.body;
 
-        // Validation
+        // Validasi
         if (!title || !author || !resource_type) {
-            return res.status(400).json({ error: 'Please enter all required fields.' });
+            return res.status(400).json({ error: 'Mohon masukkan semua field yang diperlukan.' });
         }
 
         if (isNaN(total_copies) || total_copies < 0 || isNaN(available_copies) || available_copies < 0) {
-            return res.status(400).json({ error: 'Copies must be positive integers.' });
+            return res.status(400).json({ error: 'Jumlah salinan harus bilangan positif.' });
         }
 
         if (available_copies > total_copies) {
-            return res.status(400).json({ error: 'Available copies cannot exceed total copies.' });
+            return res.status(400).json({ error: 'Salinan tersedia tidak boleh melebihi total salinan.' });
         }
 
-        const { data, error } = await supabase
+        const { data: dataSumber, error: kesalahan } = await supabase
             .from('resources')
             .update({
                 title,
@@ -108,264 +109,264 @@ exports.editResource = async (req, res) => {
                 publisher,
                 description
             })
-            .eq('resource_id', resourceId)
+            .eq('resource_id', idSumberDaya)
             .select();
 
-        if (error) {
-            console.error('Error editing resource:', error);
-            if (error.code === '23505') { // PostgreSQL unique violation
-                return res.status(400).json({ error: 'A resource with this ISBN already exists.' });
+        if (kesalahan) {
+            console.error('Kesalahan mengedit sumber daya:', kesalahan);
+            if (kesalahan.code === '23505') { // Pelanggaran unik PostgreSQL
+                return res.status(400).json({ error: 'Sumber daya dengan ISBN ini sudah ada.' });
             }
-            return res.status(500).json({ error: 'Failed to edit resource.' });
+            return res.status(500).json({ error: 'Gagal mengedit sumber daya.' });
         }
 
-        if (!data || data.length === 0) {
-            return res.status(404).json({ error: 'Resource not found.' });
+        if (!dataSumber || dataSumber.length === 0) {
+            return res.status(404).json({ error: 'Sumber daya tidak ditemukan.' });
         }
 
-        res.json({ message: 'Resource updated successfully.' });
+        res.json({ message: 'Sumber daya berhasil diperbarui.' });
     } catch (err) {
-        console.error('Edit resource error:', err);
-        res.status(500).json({ error: 'Internal server error.' });
+        console.error('Kesalahan edit sumber daya:', err);
+        res.status(500).json({ error: 'Kesalahan server internal.' });
     }
 };
 
-// Delete Resource
+// Hapus Sumber Daya
 exports.deleteResource = async (req, res) => {
     try {
-        const resourceId = req.params.id;
+        const idSumberDaya = req.params.id;
 
-        const { error } = await supabase
+        const { error: kesalahan } = await supabase
             .from('resources')
             .delete()
-            .eq('resource_id', resourceId);
+            .eq('resource_id', idSumberDaya);
 
-        if (error) {
-            console.error('Error deleting resource:', error);
-            return res.status(500).json({ error: 'Failed to delete resource.' });
+        if (kesalahan) {
+            console.error('Kesalahan menghapus sumber daya:', kesalahan);
+            return res.status(500).json({ error: 'Gagal menghapus sumber daya.' });
         }
 
-        res.json({ message: 'Resource deleted successfully.' });
+        res.json({ message: 'Sumber daya berhasil dihapus.' });
     } catch (err) {
-        console.error('Delete resource error:', err);
-        res.status(500).json({ error: 'Internal server error.' });
+        console.error('Kesalahan hapus sumber daya:', err);
+        res.status(500).json({ error: 'Kesalahan server internal.' });
     }
 };
 
-// Get Resources
+// Dapatkan Sumber Daya
 exports.getResources = async (req, res) => {
     try {
-        const { data, error } = await supabase
+        const { data: dataSumber, error: kesalahan } = await supabase
             .from('resources')
             .select('*')
             .order('created_at', { ascending: false });
 
-        if (error) {
-            console.error('Error fetching resources:', error);
-            return res.status(500).json({ error: 'Failed to fetch resources.' });
+        if (kesalahan) {
+            console.error('Kesalahan mengambil sumber daya:', kesalahan);
+            return res.status(500).json({ error: 'Gagal mengambil sumber daya.' });
         }
 
-        res.json(data || []);
+        res.json(dataSumber || []);
     } catch (err) {
-        console.error('Get resources error:', err);
-        res.status(500).json({ error: 'Internal server error.' });
+        console.error('Kesalahan dapatkan sumber daya:', err);
+        res.status(500).json({ error: 'Kesalahan server internal.' });
     }
 };
 
-// Manage Borrowing
+// Kelola Peminjaman
 exports.manageBorrowing = async (req, res) => {
     try {
-        const borrowingId = req.params.id;
+        const idPeminjaman = req.params.id;
         const { status, due_date } = req.body;
 
-        // First, get the current borrowing to check status change and get resource_id
-        const { data: borrowing, error: fetchError } = await supabase
+        // Ambil peminjaman untuk memeriksa perubahan status dan mendapatkan resource_id
+        const { data: peminjaman, error: kesalahanAmbil } = await supabase
             .from('borrowings')
             .select('*, resources(*)')
-            .eq('borrowing_id', borrowingId)
+            .eq('borrowing_id', idPeminjaman)
             .single();
 
-        if (fetchError || !borrowing) {
-            return res.status(404).json({ error: 'Borrowing not found.' });
+        if (kesalahanAmbil || !peminjaman) {
+            return res.status(404).json({ error: 'Peminjaman tidak ditemukan.' });
         }
 
-        // Update the borrowing
-        const updateData = { status };
-        if (due_date) updateData.due_date = due_date;
+        // Perbarui peminjaman
+        const dataUpdate = { status };
+        if (due_date) dataUpdate.due_date = due_date;
         if (status === 'Returned') {
-            updateData.return_date = new Date().toISOString().split('T')[0];
+            dataUpdate.return_date = new Date().toISOString().split('T')[0];
         }
 
-        const { error } = await supabase
+        const { error: kesalahan } = await supabase
             .from('borrowings')
-            .update(updateData)
-            .eq('borrowing_id', borrowingId);
+            .update(dataUpdate)
+            .eq('borrowing_id', idPeminjaman);
 
-        if (error) {
-            console.error('Error managing borrowing:', error);
-            return res.status(500).json({ error: 'Failed to update borrowing status.' });
+        if (kesalahan) {
+            console.error('Kesalahan mengelola peminjaman:', kesalahan);
+            return res.status(500).json({ error: 'Gagal memperbarui status peminjaman.' });
         }
 
-        // If status changed to 'Returned' and was previously 'Active', update available_copies
-        if (status === 'Returned' && borrowing.status === 'Active' && borrowing.resources) {
-            const { error: resourceError } = await supabase
+        // Jika status berubah ke 'Returned' dan sebelumnya 'Active', perbarui salinan tersedia
+        if (status === 'Returned' && peminjaman.status === 'Active' && peminjaman.resources) {
+            const { error: kesalahanSumber } = await supabase
                 .from('resources')
                 .update({
-                    available_copies: borrowing.resources.available_copies + 1
+                    available_copies: peminjaman.resources.available_copies + 1
                 })
-                .eq('resource_id', borrowing.resource_id);
+                .eq('resource_id', peminjaman.resource_id);
 
-            if (resourceError) {
-                console.error('Error updating resource availability:', resourceError);
-                // Continue anyway - borrowing status is updated
+            if (kesalahanSumber) {
+                console.error('Kesalahan memperbarui ketersediaan sumber daya:', kesalahanSumber);
+                // Lanjutkan - status peminjaman sudah diperbarui
             }
         }
 
-        res.json({ message: 'Borrowing status updated successfully.' });
+        res.json({ message: 'Status peminjaman berhasil diperbarui.' });
     } catch (err) {
-        console.error('Manage borrowing error:', err);
-        res.status(500).json({ error: 'Internal server error.' });
+        console.error('Kesalahan kelola peminjaman:', err);
+        res.status(500).json({ error: 'Kesalahan server internal.' });
     }
 };
 
-// Track Inventory
+// Lacak Inventaris
 exports.trackInventory = async (req, res) => {
     try {
-        const { data, error } = await supabase
+        const { data: dataInventaris, error: kesalahan } = await supabase
             .from('resources')
             .select('resource_id, title, resource_type, total_copies, available_copies');
 
-        if (error) {
-            console.error('Error tracking inventory:', error);
-            return res.status(500).json({ error: 'Failed to track inventory.' });
+        if (kesalahan) {
+            console.error('Kesalahan melacak inventaris:', kesalahan);
+            return res.status(500).json({ error: 'Gagal melacak inventaris.' });
         }
 
-        res.json(data || []);
+        res.json(dataInventaris || []);
     } catch (err) {
-        console.error('Track inventory error:', err);
-        res.status(500).json({ error: 'Internal server error.' });
+        console.error('Kesalahan lacak inventaris:', err);
+        res.status(500).json({ error: 'Kesalahan server internal.' });
     }
 };
 
-// Handle Reservations
+// Tangani Reservasi
 exports.handleReservation = async (req, res) => {
     try {
-        const reservationId = req.params.id;
+        const idReservasi = req.params.id;
         const { status } = req.body;
 
-        const { error } = await supabase
+        const { error: kesalahan } = await supabase
             .from('reservations')
             .update({ status })
-            .eq('reservation_id', reservationId);
+            .eq('reservation_id', idReservasi);
 
-        if (error) {
-            console.error('Error handling reservation:', error);
-            return res.status(500).json({ error: 'Failed to update reservation status.' });
+        if (kesalahan) {
+            console.error('Kesalahan menangani reservasi:', kesalahan);
+            return res.status(500).json({ error: 'Gagal memperbarui status reservasi.' });
         }
 
-        res.json({ message: 'Reservation status updated successfully.' });
+        res.json({ message: 'Status reservasi berhasil diperbarui.' });
     } catch (err) {
-        console.error('Handle reservation error:', err);
-        res.status(500).json({ error: 'Internal server error.' });
+        console.error('Kesalahan tangani reservasi:', err);
+        res.status(500).json({ error: 'Kesalahan server internal.' });
     }
 };
 
-// Generate Reports
+// Buat Laporan
 exports.generateReports = async (req, res) => {
     try {
-        // Get total resources
-        const { count: totalResources } = await supabase
+        // Dapatkan total sumber daya
+        const { count: totalSumberDaya } = await supabase
             .from('resources')
             .select('*', { count: 'exact', head: true });
 
-        // Get total borrowings
-        const { count: totalBorrowings } = await supabase
+        // Dapatkan total peminjaman
+        const { count: totalPeminjaman } = await supabase
             .from('borrowings')
             .select('*', { count: 'exact', head: true });
 
-        // Get active borrowings
-        const { count: activeBorrowings } = await supabase
+        // Dapatkan peminjaman aktif
+        const { count: peminjamanAktif } = await supabase
             .from('borrowings')
             .select('*', { count: 'exact', head: true })
             .eq('status', 'Active');
 
-        // Get overdue borrowings (use local date to match getOverdueItems)
-        const now = new Date();
-        const today = now.getFullYear() + '-' +
-            String(now.getMonth() + 1).padStart(2, '0') + '-' +
-            String(now.getDate()).padStart(2, '0');
-        const { count: overdueBorrowings } = await supabase
+        // Dapatkan peminjaman terlambat (gunakan tanggal lokal untuk mencocokkan getOverdueItems)
+        const sekarang = new Date();
+        const hariIni = sekarang.getFullYear() + '-' +
+            String(sekarang.getMonth() + 1).padStart(2, '0') + '-' +
+            String(sekarang.getDate()).padStart(2, '0');
+        const { count: peminjamanTerlambat } = await supabase
             .from('borrowings')
             .select('*', { count: 'exact', head: true })
             .eq('status', 'Active')
-            .lt('due_date', today);
+            .lt('due_date', hariIni);
 
-        // Get total users
-        const { count: totalUsers } = await supabase
+        // Dapatkan total pengguna
+        const { count: totalPengguna } = await supabase
             .from('users')
             .select('*', { count: 'exact', head: true });
 
-        // Get popular resources with borrow counts
-        // First get all borrowings with resource data
-        const { data: allBorrowings } = await supabase
+        // Dapatkan sumber daya populer dengan jumlah peminjaman
+        // Pertama ambil semua peminjaman dengan data sumber daya
+        const { data: semuaPeminjaman } = await supabase
             .from('borrowings')
             .select('resource_id, resources(resource_id, title, author, isbn, genre)');
 
-        // Aggregate by resource_id
-        const resourceBorrowCounts = {};
-        if (allBorrowings) {
-            allBorrowings.forEach(borrowing => {
-                if (borrowing.resources) {
-                    const resourceId = borrowing.resource_id;
-                    if (!resourceBorrowCounts[resourceId]) {
-                        resourceBorrowCounts[resourceId] = {
-                            ...borrowing.resources,
+        // Agregasi berdasarkan resource_id
+        const hitungPeminjamanSumber = {};
+        if (semuaPeminjaman) {
+            semuaPeminjaman.forEach(peminjaman => {
+                if (peminjaman.resources) {
+                    const idSumber = peminjaman.resource_id;
+                    if (!hitungPeminjamanSumber[idSumber]) {
+                        hitungPeminjamanSumber[idSumber] = {
+                            ...peminjaman.resources,
                             borrow_count: 0
                         };
                     }
-                    resourceBorrowCounts[resourceId].borrow_count++;
+                    hitungPeminjamanSumber[idSumber].borrow_count++;
                 }
             });
         }
 
-        // Convert to array and sort by borrow count
-        const popularResources = Object.values(resourceBorrowCounts)
+        // Konversi ke array dan urutkan berdasarkan jumlah peminjaman
+        const sumberPopuler = Object.values(hitungPeminjamanSumber)
             .sort((a, b) => b.borrow_count - a.borrow_count)
             .slice(0, 10);
 
-        // Get available resources count
-        const { data: availableCount } = await supabase
+        // Dapatkan jumlah sumber daya tersedia
+        const { data: hitungTersedia } = await supabase
             .from('resources')
             .select('available_copies');
 
-        const totalAvailable = availableCount ?
-            availableCount.reduce((sum, r) => sum + (r.available_copies || 0), 0) : 0;
+        const totalTersedia = hitungTersedia ?
+            hitungTersedia.reduce((jumlah, r) => jumlah + (r.available_copies || 0), 0) : 0;
 
         res.json({
-            total_resources: totalResources || 0,
-            total_borrowings: totalBorrowings || 0,
-            active_borrowings: activeBorrowings || 0,
-            overdue_borrowings: overdueBorrowings || 0,
-            total_users: totalUsers || 0,
-            available_resources: totalAvailable,
-            popular_resources: popularResources || []
+            total_resources: totalSumberDaya || 0,
+            total_borrowings: totalPeminjaman || 0,
+            active_borrowings: peminjamanAktif || 0,
+            overdue_borrowings: peminjamanTerlambat || 0,
+            total_users: totalPengguna || 0,
+            available_resources: totalTersedia,
+            popular_resources: sumberPopuler || []
         });
     } catch (err) {
-        console.error('Generate reports error:', err);
-        res.status(500).json({ error: 'Internal server error.' });
+        console.error('Kesalahan membuat laporan:', err);
+        res.status(500).json({ error: 'Kesalahan server internal.' });
     }
 };
 
-// Send Notification
+// Kirim Notifikasi
 exports.sendNotification = async (req, res) => {
     try {
         const { user_id, message } = req.body;
 
         if (!user_id || !message) {
-            return res.status(400).json({ error: 'Please provide user_id and message.' });
+            return res.status(400).json({ error: 'Mohon berikan user_id dan pesan.' });
         }
 
-        const { data, error } = await supabase
+        const { data: dataNotifikasi, error: kesalahan } = await supabase
             .from('notifications')
             .insert([{
                 user_id,
@@ -375,73 +376,73 @@ exports.sendNotification = async (req, res) => {
             .select()
             .single();
 
-        if (error) {
-            console.error('Error sending notification:', error);
-            return res.status(500).json({ error: 'Failed to send notification.' });
+        if (kesalahan) {
+            console.error('Kesalahan mengirim notifikasi:', kesalahan);
+            return res.status(500).json({ error: 'Gagal mengirim notifikasi.' });
         }
 
-        res.status(201).json({ message: 'Notification sent successfully.', notification: data });
+        res.status(201).json({ message: 'Notifikasi berhasil dikirim.', notification: dataNotifikasi });
     } catch (err) {
-        console.error('Send notification error:', err);
-        res.status(500).json({ error: 'Internal server error.' });
+        console.error('Kesalahan kirim notifikasi:', err);
+        res.status(500).json({ error: 'Kesalahan server internal.' });
     }
 };
 
-// Get All Users
+// Dapatkan Semua Pengguna
 exports.getAllUsers = async (req, res) => {
     try {
-        const { data, error } = await supabase
+        const { data: dataPengguna, error: kesalahan } = await supabase
             .from('users')
             .select('user_id, username, email, first_name, last_name, role, phone_number, created_at, updated_at')
             .order('created_at', { ascending: false });
 
-        if (error) {
-            console.error('Error fetching users:', error);
-            return res.status(500).json({ error: 'Failed to fetch users.' });
+        if (kesalahan) {
+            console.error('Kesalahan mengambil pengguna:', kesalahan);
+            return res.status(500).json({ error: 'Gagal mengambil pengguna.' });
         }
 
-        res.json(data || []);
+        res.json(dataPengguna || []);
     } catch (err) {
-        console.error('Get all users error:', err);
-        res.status(500).json({ error: 'Internal server error.' });
+        console.error('Kesalahan dapatkan semua pengguna:', err);
+        res.status(500).json({ error: 'Kesalahan server internal.' });
     }
 };
 
-// Create New User
+// Buat Pengguna Baru
 exports.createUser = async (req, res) => {
     try {
         const { username, email, password, first_name, last_name, role, phone_number } = req.body;
 
         if (!username || !email || !password || !first_name || !last_name || !role) {
-            return res.status(400).json({ error: 'Please enter all required fields.' });
+            return res.status(400).json({ error: 'Mohon masukkan semua field yang diperlukan.' });
         }
 
-        const validRoles = ['Librarian', 'Patron'];
-        if (!validRoles.includes(role)) {
-            return res.status(400).json({ error: `Role must be one of: ${validRoles.join(', ')}.` });
+        const peranValid = ['Librarian', 'Patron'];
+        if (!peranValid.includes(role)) {
+            return res.status(400).json({ error: `Peran harus salah satu dari: ${peranValid.join(', ')}.` });
         }
 
-        // Check if email already exists
-        const { data: existingUser } = await supabase
+        // Periksa apakah email sudah ada
+        const { data: penggunaAda } = await supabase
             .from('users')
             .select('*')
             .or(`username.eq.${username},email.eq.${email}`)
             .single();
 
-        if (existingUser) {
-            return res.status(400).json({ error: 'A user with this username or email already exists.' });
+        if (penggunaAda) {
+            return res.status(400).json({ error: 'Pengguna dengan username atau email ini sudah ada.' });
         }
 
-        // Hash password
-        const hashedPassword = await bcrypt.hash(password, 10);
+        // Hash kata sandi
+        const katasandiHash = await bcrypt.hash(password, 10);
 
-        // Insert new user
-        const { data, error } = await supabase
+        // Masukkan pengguna baru
+        const { data: dataPengguna, error: kesalahan } = await supabase
             .from('users')
             .insert([{
                 username,
                 email,
-                password_hash: hashedPassword,
+                password_hash: katasandiHash,
                 first_name,
                 last_name,
                 role,
@@ -450,34 +451,34 @@ exports.createUser = async (req, res) => {
             .select()
             .single();
 
-        if (error) {
-            console.error('Error creating user:', error);
-            return res.status(500).json({ error: 'Failed to create user.' });
+        if (kesalahan) {
+            console.error('Kesalahan membuat pengguna:', kesalahan);
+            return res.status(500).json({ error: 'Gagal membuat pengguna.' });
         }
 
-        res.status(201).json({ message: 'User account created successfully.', user: data });
+        res.status(201).json({ message: 'Akun pengguna berhasil dibuat.', user: dataPengguna });
     } catch (err) {
-        console.error('Create user error:', err);
-        res.status(500).json({ error: 'Internal server error.' });
+        console.error('Kesalahan buat pengguna:', err);
+        res.status(500).json({ error: 'Kesalahan server internal.' });
     }
 };
 
-// Manage (Update) User Accounts
+// Kelola (Perbarui) Akun Pengguna
 exports.manageUser = async (req, res) => {
     try {
-        const userId = req.params.id;
+        const idPengguna = req.params.id;
         const { username, email, password, first_name, last_name, role, phone_number } = req.body;
 
         if (!username || !email || !first_name || !last_name || !role) {
-            return res.status(400).json({ error: 'Please enter all required fields.' });
+            return res.status(400).json({ error: 'Mohon masukkan semua field yang diperlukan.' });
         }
 
-        const validRoles = ['Librarian', 'Patron'];
-        if (!validRoles.includes(role)) {
-            return res.status(400).json({ error: `Role must be one of: ${validRoles.join(', ')}.` });
+        const peranValid = ['Librarian', 'Patron'];
+        if (!peranValid.includes(role)) {
+            return res.status(400).json({ error: `Peran harus salah satu dari: ${peranValid.join(', ')}.` });
         }
 
-        const updateData = {
+        const dataUpdate = {
             username,
             email,
             first_name,
@@ -486,121 +487,121 @@ exports.manageUser = async (req, res) => {
             phone_number
         };
 
-        // If password is provided, hash it
+        // Jika kata sandi diberikan, hash terlebih dahulu
         if (password) {
-            const hashedPassword = await bcrypt.hash(password, 10);
-            updateData.password_hash = hashedPassword;
+            const katasandiHash = await bcrypt.hash(password, 10);
+            dataUpdate.password_hash = katasandiHash;
         }
 
-        const { data, error } = await supabase
+        const { data: dataPengguna, error: kesalahan } = await supabase
             .from('users')
-            .update(updateData)
-            .eq('user_id', userId)
+            .update(dataUpdate)
+            .eq('user_id', idPengguna)
             .select();
 
-        if (error) {
-            console.error('Error managing user:', error);
-            return res.status(500).json({ error: 'Failed to update user.' });
+        if (kesalahan) {
+            console.error('Kesalahan mengelola pengguna:', kesalahan);
+            return res.status(500).json({ error: 'Gagal memperbarui pengguna.' });
         }
 
-        if (!data || data.length === 0) {
-            return res.status(404).json({ error: 'User not found.' });
+        if (!dataPengguna || dataPengguna.length === 0) {
+            return res.status(404).json({ error: 'Pengguna tidak ditemukan.' });
         }
 
-        res.json({ message: 'User account updated successfully.' });
+        res.json({ message: 'Akun pengguna berhasil diperbarui.' });
     } catch (err) {
-        console.error('Manage user error:', err);
-        res.status(500).json({ error: 'Internal server error.' });
+        console.error('Kesalahan kelola pengguna:', err);
+        res.status(500).json({ error: 'Kesalahan server internal.' });
     }
 };
 
-// Delete User Account
+// Hapus Akun Pengguna
 exports.deleteUser = async (req, res) => {
     try {
-        const userId = req.params.id;
+        const idPengguna = req.params.id;
 
-        const { error } = await supabase
+        const { error: kesalahan } = await supabase
             .from('users')
             .delete()
-            .eq('user_id', userId);
+            .eq('user_id', idPengguna);
 
-        if (error) {
-            console.error('Error deleting user:', error);
-            return res.status(500).json({ error: 'Failed to delete user.' });
+        if (kesalahan) {
+            console.error('Kesalahan menghapus pengguna:', kesalahan);
+            return res.status(500).json({ error: 'Gagal menghapus pengguna.' });
         }
 
-        res.json({ message: 'User account deleted successfully.' });
+        res.json({ message: 'Akun pengguna berhasil dihapus.' });
     } catch (err) {
-        console.error('Delete user error:', err);
-        res.status(500).json({ error: 'Internal server error.' });
+        console.error('Kesalahan hapus pengguna:', err);
+        res.status(500).json({ error: 'Kesalahan server internal.' });
     }
 };
 
-// Get All Borrowings with User and Resource Details
+// Dapatkan Semua Peminjaman dengan Detail Pengguna dan Sumber Daya
 exports.getAllBorrowings = async (req, res) => {
     try {
-        const { data, error } = await supabase
+        const { data: dataPeminjaman, error: kesalahan } = await supabase
             .from('borrowings')
             .select('*, users(*), resources(*)')
             .order('borrow_date', { ascending: false });
 
-        if (error) {
-            console.error('Error fetching borrowings:', error);
-            return res.status(500).json({ error: 'Failed to fetch borrowings.' });
+        if (kesalahan) {
+            console.error('Kesalahan mengambil peminjaman:', kesalahan);
+            return res.status(500).json({ error: 'Gagal mengambil peminjaman.' });
         }
 
-        res.json(data || []);
+        res.json(dataPeminjaman || []);
     } catch (err) {
-        console.error('Get all borrowings error:', err);
-        res.status(500).json({ error: 'Internal server error.' });
+        console.error('Kesalahan dapatkan semua peminjaman:', err);
+        res.status(500).json({ error: 'Kesalahan server internal.' });
     }
 };
 
-// Get Overdue Items with User and Resource Details
+// Dapatkan Item Terlambat dengan Detail Pengguna dan Sumber Daya
 exports.getOverdueItems = async (req, res) => {
     try {
-        // Use local date instead of UTC to avoid timezone issues
-        const now = new Date();
-        const today = now.getFullYear() + '-' +
-            String(now.getMonth() + 1).padStart(2, '0') + '-' +
-            String(now.getDate()).padStart(2, '0');
+        // Gunakan tanggal lokal untuk menghindari masalah timezone
+        const sekarang = new Date();
+        const hariIni = sekarang.getFullYear() + '-' +
+            String(sekarang.getMonth() + 1).padStart(2, '0') + '-' +
+            String(sekarang.getDate()).padStart(2, '0');
 
-        const { data, error } = await supabase
+        const { data: dataTerlambat, error: kesalahan } = await supabase
             .from('borrowings')
             .select('*, users(*), resources(*)')
             .eq('status', 'Active')
-            .lt('due_date', today)
+            .lt('due_date', hariIni)
             .order('due_date', { ascending: true });
 
-        if (error) {
-            console.error('Error fetching overdue items:', error);
-            return res.status(500).json({ error: 'Failed to fetch overdue items.' });
+        if (kesalahan) {
+            console.error('Kesalahan mengambil item terlambat:', kesalahan);
+            return res.status(500).json({ error: 'Gagal mengambil item terlambat.' });
         }
 
-        res.json(data || []);
+        res.json(dataTerlambat || []);
     } catch (err) {
-        console.error('Get overdue items error:', err);
-        res.status(500).json({ error: 'Internal server error.' });
+        console.error('Kesalahan dapatkan item terlambat:', err);
+        res.status(500).json({ error: 'Kesalahan server internal.' });
     }
 };
 
-// Get Library Logs
+// Dapatkan Log Perpustakaan
 exports.getLibraryLogs = async (req, res) => {
     try {
-        const { data, error } = await supabase
+        const { data: dataLog, error: kesalahan } = await supabase
             .from('library_logs')
             .select('*, users(username)')
             .order('created_at', { ascending: false })
             .limit(100);
 
-        if (error) {
-            console.error('Error fetching library logs:', error);
-            return res.status(500).json({ error: 'Failed to fetch library logs.' });
+        if (kesalahan) {
+            console.error('Kesalahan mengambil log perpustakaan:', kesalahan);
+            return res.status(500).json({ error: 'Gagal mengambil log perpustakaan.' });
         }
 
-        res.json(data || []);
+        res.json(dataLog || []);
     } catch (err) {
-        console.error('Get library logs error:', err);
-        res.status(500).json({ error: 'Internal server error.' });
+        console.error('Kesalahan dapatkan log perpustakaan:', err);
+        res.status(500).json({ error: 'Kesalahan server internal.' });
     }
 };
