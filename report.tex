@@ -1,0 +1,563 @@
+\documentclass[11pt,a4paper]{article}
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage{amsmath}
+\usepackage{amsfonts}
+\usepackage{amssymb}
+\usepackage{graphicx}
+\usepackage{booktabs}
+\usepackage{longtable}
+\usepackage{hyperref}
+\usepackage{xcolor}
+\usepackage{geometry}
+\usepackage{fancyhdr}
+
+\geometry{margin=1in}
+
+\hypersetup{
+    colorlinks=true,
+    linkcolor=blue,
+    filecolor=magenta,
+    urlcolor=cyan,
+}
+
+\pagestyle{fancy}
+\fancyhf{}
+\fancyhead[L]{Library Management System}
+\fancyhead[R]{\thepage}
+\renewcommand{\headrulewidth}{0.4pt}
+
+\title{Library Management System Documentation}
+\author{CSC3170 Database Systems\\
+\texttt{CUHK(SZ)}}
+\date{November 23, 2024}
+
+\begin{document}
+
+\maketitle
+
+\tableofcontents
+\newpage
+
+\section{Overall Project Description}
+
+The \textbf{Library Management System} is a comprehensive software solution designed to optimize library operations by managing resources, user interactions, and administrative tasks efficiently. It enhances user experience through intuitive interfaces for catalog access, borrowing, reservations, and maintains precise transaction records.
+
+The system supports three distinct user roles: \textbf{Patron}, \textbf{Librarian}, and \textbf{Director}, each with specific permissions and functionalities tailored to their responsibilities within the library ecosystem.
+
+\section{Requirements Analysis}
+
+\subsection{Functional Requirements}
+
+\begin{itemize}
+    \item \textbf{User Registration and Login:} Enable users to create accounts and securely log in with JWT authentication.
+    \item \textbf{Catalog Search:} Allow searching by title, author, ISBN, genre, or resource type.
+    \item \textbf{Borrowing and Reserving:} Facilitate borrowing available resources and reserving unavailable ones.
+    \item \textbf{Borrowing History:} Provide access to current and past borrowings.
+    \item \textbf{Renewals:} Allow users to extend borrowing periods within limits (maximum 2 renewals).
+    \item \textbf{Profile Management:} Let users update personal information and settings.
+    \item \textbf{Administrative Functions:} Enable librarians to manage resources and user accounts.
+    \item \textbf{Director Functions:} Allow directors to manage librarian accounts and view system-wide statistics.
+    \item \textbf{Reports and Logs:} Generate reports on borrowings, overdue items, and library activity logs.
+    \item \textbf{Notifications:} Send notifications to users regarding due dates and system updates.
+\end{itemize}
+
+\subsection{User Roles}
+
+\begin{table}[h]
+\centering
+\begin{tabular}{@{}ll@{}}
+\toprule
+\textbf{Role} & \textbf{Description} \\
+\midrule
+Patron & Library users who can search, borrow, and return resources \\
+Librarian & Staff who manage resources, users, and borrowings \\
+Director & Senior staff with all librarian privileges plus librarian management \\
+\bottomrule
+\end{tabular}
+\caption{User Roles in the System}
+\end{table}
+
+\section{Database and SQL Design}
+
+\subsection{Database Schema}
+
+The system employs a relational database hosted on \textbf{Supabase} (PostgreSQL) to ensure data integrity and efficient querying. The primary tables include:
+
+\begin{itemize}
+    \item \textbf{Users:} Stores user information and authentication data.
+    \item \textbf{Resources:} Details of library materials.
+    \item \textbf{Borrowings:} Records of borrowed resources.
+    \item \textbf{Reservations:} Records of resource reservations.
+    \item \textbf{Notifications:} User notification messages.
+    \item \textbf{Library\_Logs:} Audit trail of system activities.
+\end{itemize}
+
+\subsection{Primary Tables}
+
+\subsubsection{Users}
+
+\begin{table}[h]
+\centering
+\begin{tabular}{@{}ll@{}}
+\toprule
+\textbf{Field} & \textbf{Description} \\
+\midrule
+user\_id & Primary key, unique identifier for each user \\
+username & Unique username for login \\
+first\_name & User's first name \\
+last\_name & User's last name \\
+email & User's email address \\
+password\_hash & Hashed password for authentication (bcrypt) \\
+role & User role (Patron, Librarian, Director) \\
+phone\_number & User's contact number \\
+created\_at & Timestamp of account creation \\
+updated\_at & Timestamp of last account update \\
+\bottomrule
+\end{tabular}
+\caption{Users Table Schema}
+\end{table}
+
+\subsubsection{Resources}
+
+\begin{table}[h]
+\centering
+\begin{tabular}{@{}ll@{}}
+\toprule
+\textbf{Field} & \textbf{Description} \\
+\midrule
+resource\_id & Primary key, unique identifier for each resource \\
+title & Title of the resource \\
+author & Author of the resource \\
+resource\_type & Type of resource (e.g., Book, Magazine, Journal) \\
+isbn & International Standard Book Number \\
+genre & Genre/category of the resource \\
+publisher & Publisher name \\
+publication\_year & Year of publication \\
+description & Resource description \\
+available\_copies & Number of copies available for borrowing \\
+total\_copies & Total number of copies \\
+created\_at & Timestamp of resource addition \\
+updated\_at & Timestamp of last resource update \\
+\bottomrule
+\end{tabular}
+\caption{Resources Table Schema}
+\end{table}
+
+\subsubsection{Borrowings}
+
+\begin{table}[h]
+\centering
+\begin{tabular}{@{}ll@{}}
+\toprule
+\textbf{Field} & \textbf{Description} \\
+\midrule
+borrowing\_id & Primary key, unique identifier for each borrowing record \\
+user\_id & Foreign key referencing Users table \\
+resource\_id & Foreign key referencing Resources table \\
+borrow\_date & Date when the resource was borrowed \\
+due\_date & Date when the resource is due for return \\
+return\_date & Date when the resource was returned \\
+status & Current status (Active, Returned) \\
+renewals & Number of times the borrowing has been renewed \\
+created\_at & Timestamp of borrowing record creation \\
+updated\_at & Timestamp of last update \\
+\bottomrule
+\end{tabular}
+\caption{Borrowings Table Schema}
+\end{table}
+
+\subsubsection{Reservations}
+
+\begin{table}[h]
+\centering
+\begin{tabular}{@{}ll@{}}
+\toprule
+\textbf{Field} & \textbf{Description} \\
+\midrule
+reservation\_id & Primary key, unique identifier \\
+user\_id & Foreign key referencing Users table \\
+resource\_id & Foreign key referencing Resources table \\
+status & Reservation status (Pending, Fulfilled, Cancelled) \\
+created\_at & Timestamp of reservation creation \\
+\bottomrule
+\end{tabular}
+\caption{Reservations Table Schema}
+\end{table}
+
+\section{Front and Back-End Design and Implementation}
+
+The Library Management System employs a modern \textbf{client-server architecture} with a React frontend and Node.js/Express backend, ensuring a clear separation of concerns, enhancing maintainability and scalability.
+
+\subsection{Backend Design}
+
+\subsubsection{Technologies Used}
+
+\begin{itemize}
+    \item \textbf{Node.js:} JavaScript runtime for building scalable network applications.
+    \item \textbf{Express.js:} Web framework for handling HTTP requests and routing.
+    \item \textbf{Supabase:} PostgreSQL database with built-in authentication and real-time features.
+    \item \textbf{bcrypt:} Library for hashing passwords securely.
+    \item \textbf{jsonwebtoken:} Library for JWT token generation and verification.
+    \item \textbf{dayjs:} Lightweight date manipulation library.
+\end{itemize}
+
+\subsubsection{Key Modules and Routes}
+
+\textbf{Authentication Routes:} Manage user registration and login processes with JWT tokens.
+
+\textbf{Patron Routes:} Handle catalog search, borrowing, reservations, borrowing history, notifications, and profile updates.
+
+\textbf{Librarian Routes:} Manage resources, borrowings, reservations, reports, notifications, user accounts, and library logs.
+
+\subsubsection{Implementation Details}
+
+\begin{longtable}{@{}p{3cm}p{4cm}p{6cm}@{}}
+\toprule
+\textbf{Requirements} & \textbf{Function/Procedure} & \textbf{Function Introduction} \\
+\midrule
+\endhead
+
+User Registration & \texttt{registerPatron} (Backend) & Processes registration data, hashes passwords using bcrypt, and stores new user information in the database. \\
+\midrule
+
+User Login & \texttt{login} (Backend) & Verifies user credentials, generates JWT tokens with 24h expiry, and manages authentication sessions. \\
+\midrule
+
+Search Catalog & \texttt{searchCatalog} (Backend) & Executes Supabase queries to fetch resources matching search criteria (title, author, ISBN, type, genre). \\
+\midrule
+
+Borrow Resource & \texttt{borrowResource} (Backend) & Validates availability, creates borrowing records with 14-day loan period, and updates resource counts. \\
+\midrule
+
+Reserve Resource & \texttt{reserveResource} (Backend) & Creates reservation for unavailable resources, prevents duplicate reservations. \\
+\midrule
+
+View Borrowed Books & \texttt{getBorrowedBooks} (Backend) & Fetches active borrowed books data with resource details for the authenticated user. \\
+\midrule
+
+Renew Borrowing & \texttt{renewBorrowing} (Backend) & Validates renewal limits (max 2), checks overdue status, and extends due date by 14 days. \\
+\midrule
+
+Return Book & \texttt{returnBorrowing} (Backend) & Marks borrowing as returned, updates return date, and increments available copies. \\
+\midrule
+
+Borrow History & \texttt{borrowHistory} (Backend) & Retrieves complete borrowing history including returned items. \\
+\midrule
+
+Update Profile & \texttt{updateProfile} (Backend) & Processes profile updates and modifies user information in the database. \\
+\midrule
+
+Add New Resource & \texttt{addResource} (Backend) & Allows librarians to add new resources to the catalog with validation. \\
+\midrule
+
+Update Resource & \texttt{editResource} (Backend) & Enables librarians to update existing resource details with validation. \\
+\midrule
+
+Delete Resource & \texttt{deleteResource} (Backend) & Allows librarians to remove resources from the catalog. \\
+\midrule
+
+Get All Users & \texttt{getAllUsers} (Backend) & Retrieves a list of all registered users for administrative purposes. \\
+\midrule
+
+Create User & \texttt{createUser} (Backend) & Allows librarians to create new user accounts with role assignment. \\
+\midrule
+
+Manage User & \texttt{manageUser} (Backend) & Allows librarians to update user roles and account information. \\
+\midrule
+
+Delete User & \texttt{deleteUser} (Backend) & Enables librarians to remove user accounts from the system. \\
+\midrule
+
+Get All Borrowings & \texttt{getAllBorrowings} (Backend) & Fetches all borrowings with user and resource details for librarians. \\
+\midrule
+
+Manage Borrowing & \texttt{manageBorrowing} (Backend) & Allows librarians to update borrowing status and due dates. \\
+\midrule
+
+Get Overdue Items & \texttt{getOverdueItems} (Backend) & Fetches active borrowings past due date with user and resource details. \\
+\midrule
+
+Generate Reports & \texttt{generateReports} (Backend) & Generates statistics including total resources, borrowings, overdue items, and popular resources. \\
+\midrule
+
+Send Notification & \texttt{sendNotification} (Backend) & Sends notification messages to specific users. \\
+\midrule
+
+Get Library Logs & \texttt{getLibraryLogs} (Backend) & Retrieves audit trail of library activities. \\
+\midrule
+
+Track Inventory & \texttt{trackInventory} (Backend) & Provides inventory status of all resources. \\
+\midrule
+
+Handle Reservation & \texttt{handleReservation} (Backend) & Updates reservation status (Fulfilled, Cancelled). \\
+
+\bottomrule
+\caption{Backend Implementation Details}
+\end{longtable}
+
+\subsection{Frontend Design}
+
+\subsubsection{Technologies Used}
+
+\begin{itemize}
+    \item \textbf{React:} JavaScript library for building user interfaces.
+    \item \textbf{TypeScript:} Typed superset of JavaScript for better code quality.
+    \item \textbf{Tailwind CSS:} Utility-first CSS framework for responsive design.
+    \item \textbf{React Router:} Client-side routing for single-page application.
+    \item \textbf{Axios:} HTTP client for API requests.
+    \item \textbf{Lucide React:} Icon library for UI elements.
+\end{itemize}
+
+\subsubsection{Key Modules and Functions}
+
+The frontend is organized into role-based page components:
+
+\begin{itemize}
+    \item \textbf{Authentication:} Login and Register pages handle user authentication.
+    \item \textbf{Patron Pages:} SearchCatalog, BorrowedBooks, BorrowHistory, Notifications, Profile.
+    \item \textbf{Librarian Pages:} ManageResources, ManageUsers, Borrowings, Overdue, Reports, LibraryLogs.
+    \item \textbf{Director Pages:} DirectorDashboard with system statistics and librarian management.
+\end{itemize}
+
+\section{How to Use the System}
+
+This section provides a step-by-step guide on effectively utilizing the \textbf{Library Management System}.
+
+\subsection{User Registration and Login}
+
+\begin{enumerate}
+    \item \textbf{Register a New Account:}
+    \begin{itemize}
+        \item Click on the ``Register'' button on the login page.
+        \item Fill in the required fields: Username, First Name, Last Name, Email, Phone Number, and Password.
+        \item Click ``Register'' to create your account.
+        \item Upon successful registration, you will be automatically logged in.
+    \end{itemize}
+
+    \item \textbf{Login to Your Account:}
+    \begin{itemize}
+        \item Enter your registered username and password.
+        \item Click ``Login'' to access your dashboard.
+        \item You will be redirected based on your role (Patron, Librarian, or Director).
+    \end{itemize}
+\end{enumerate}
+
+\subsection{Searching the Catalog}
+
+\begin{enumerate}
+    \item \textbf{Perform a Search:}
+    \begin{itemize}
+        \item Navigate to ``Search Catalog'' from the navigation menu.
+        \item Enter your search query in the search bar (searches title, author, and ISBN).
+        \item Use filters for resource type (Book, Magazine, Journal) and genre.
+        \item Click the ``Search'' button or press Enter.
+    \end{itemize}
+
+    \item \textbf{View Search Results:}
+    \begin{itemize}
+        \item Results display as cards showing title, author, ISBN, type, genre, and availability.
+        \item Use the ``Borrow'' button to borrow available resources.
+        \item Use the ``Reserve'' button for unavailable resources.
+    \end{itemize}
+\end{enumerate}
+
+\subsection{Borrowing a Resource}
+
+\begin{enumerate}
+    \item \textbf{Find the Desired Resource:}
+    \begin{itemize}
+        \item Use the search functionality to locate the resource you wish to borrow.
+    \end{itemize}
+
+    \item \textbf{Initiate Borrowing:}
+    \begin{itemize}
+        \item Click the ``Borrow'' button on the resource card.
+        \item A confirmation prompt will appear. Confirm your intent to borrow.
+    \end{itemize}
+
+    \item \textbf{Confirm Borrowing:}
+    \begin{itemize}
+        \item Upon successful borrowing, a success message will display with the due date (14 days from borrow date).
+        \item The available copies count will decrease accordingly.
+    \end{itemize}
+\end{enumerate}
+
+\subsection{Viewing and Managing Borrowed Books}
+
+\begin{enumerate}
+    \item \textbf{Access Borrowed Books:}
+    \begin{itemize}
+        \item Navigate to ``Borrowed Books'' from the navigation menu.
+        \item View all currently borrowed books with details including title, author, borrow date, due date, and renewals count.
+    \end{itemize}
+
+    \item \textbf{Renew a Borrowing:}
+    \begin{itemize}
+        \item Click the ``Renew'' button on the book you wish to extend.
+        \item Maximum 2 renewals are allowed per borrowing.
+        \item Cannot renew overdue books.
+        \item Upon successful renewal, the due date extends by 14 days.
+    \end{itemize}
+
+    \item \textbf{Return a Book:}
+    \begin{itemize}
+        \item Click the ``Return'' button on the book you wish to return.
+        \item Confirm the return action.
+        \item The book will be removed from your borrowed list and availability will be updated.
+    \end{itemize}
+\end{enumerate}
+
+\subsection{Updating Profile}
+
+\begin{enumerate}
+    \item \textbf{Access Profile Settings:}
+    \begin{itemize}
+        \item Click on ``Profile'' in the navigation menu.
+    \end{itemize}
+
+    \item \textbf{Edit Information:}
+    \begin{itemize}
+        \item Modify your personal details: Email, Phone Number, First Name, Last Name.
+        \item Optionally update your password.
+        \item Click ``Update Profile'' to save changes.
+    \end{itemize}
+\end{enumerate}
+
+\section{Using the System as a Librarian}
+
+As a \textbf{Librarian}, you have access to administrative tools for managing library operations.
+
+\subsection{Manage Library Resources}
+
+\begin{itemize}
+    \item \textbf{Add New Resources:}
+    \begin{itemize}
+        \item Navigate to ``Manage Resources''.
+        \item Click ``Add Resource'' button.
+        \item Fill in details: Title, Author, Type, ISBN, Genre, Publisher, Publication Year, Description, Total Copies.
+        \item Click ``Submit'' to save the new resource.
+    \end{itemize}
+
+    \item \textbf{Update Existing Resources:}
+    \begin{itemize}
+        \item Find the resource using the search bar.
+        \item Click the ``Edit'' button next to the resource.
+        \item Update the necessary information.
+        \item Click ``Save'' to apply changes.
+    \end{itemize}
+
+    \item \textbf{Delete Resources:}
+    \begin{itemize}
+        \item Find the resource in ``Manage Resources''.
+        \item Click the ``Delete'' button next to the resource.
+        \item Confirm the deletion when prompted.
+    \end{itemize}
+\end{itemize}
+
+\subsection{Manage User Accounts}
+
+\begin{itemize}
+    \item \textbf{View Users:}
+    \begin{itemize}
+        \item Navigate to ``Manage Users''.
+        \item Browse the list of registered users with their roles.
+    \end{itemize}
+
+    \item \textbf{Create New Users:}
+    \begin{itemize}
+        \item Click ``Add User'' button.
+        \item Fill in user details and assign role (Patron or Librarian).
+        \item Click ``Create'' to add the user.
+    \end{itemize}
+
+    \item \textbf{Edit User Information:}
+    \begin{itemize}
+        \item Click ``Edit'' next to a user's name.
+        \item Update details like Email, Phone, or Role.
+        \item Click ``Save'' to update the information.
+    \end{itemize}
+
+    \item \textbf{Delete User Accounts:}
+    \begin{itemize}
+        \item Click ``Delete'' next to the user's name.
+        \item Confirm the deletion when prompted.
+    \end{itemize}
+\end{itemize}
+
+\subsection{Manage Borrowings}
+
+\begin{itemize}
+    \item \textbf{View All Borrowings:}
+    \begin{itemize}
+        \item Navigate to ``Borrowings'' to see all active and returned borrowings.
+        \item Filter by status (All, Active, Returned, Overdue).
+    \end{itemize}
+
+    \item \textbf{View Overdue Items:}
+    \begin{itemize}
+        \item Navigate to ``Overdue'' to see all overdue borrowings.
+        \item Contact users with overdue items using the notification system.
+    \end{itemize}
+\end{itemize}
+
+\subsection{View Reports and Logs}
+
+\begin{itemize}
+    \item \textbf{Generate Reports:}
+    \begin{itemize}
+        \item Navigate to ``Reports'' to view system statistics.
+        \item View total resources, active borrowings, overdue items, and popular resources.
+    \end{itemize}
+
+    \item \textbf{View Library Logs:}
+    \begin{itemize}
+        \item Navigate to ``Library Logs'' to see audit trail of activities.
+    \end{itemize}
+\end{itemize}
+
+\section{Using the System as a Director}
+
+As a \textbf{Director}, you have all librarian privileges plus the ability to manage librarian staff.
+
+\subsection{Director Dashboard}
+
+\begin{itemize}
+    \item \textbf{View System Statistics:}
+    \begin{itemize}
+        \item Access the Director Dashboard to see overall statistics.
+        \item View Total Users, Librarians, Patrons, Resources, Active Borrowings, and Overdue Items.
+    \end{itemize}
+
+    \item \textbf{Manage Librarians:}
+    \begin{itemize}
+        \item Add new librarian accounts with full details.
+        \item Edit existing librarian information.
+        \item Remove librarian accounts when necessary.
+    \end{itemize}
+\end{itemize}
+
+\section{Conclusion}
+
+The \textbf{Library Management System} effectively streamlines library operations through its comprehensive features and user-friendly interface. By automating key processes like resource management, borrowing, and user administration, it enhances both user and administrative experiences.
+
+Key achievements of the system include:
+\begin{itemize}
+    \item Role-based access control with three distinct user types
+    \item Secure authentication using JWT tokens and bcrypt password hashing
+    \item Real-time inventory management with automatic availability updates
+    \item Comprehensive reporting and audit logging capabilities
+    \item Modern, responsive web interface using React and Tailwind CSS
+\end{itemize}
+
+Future improvements may include:
+\begin{itemize}
+    \item Advanced search with filters and sorting options
+    \item Email notifications for due date reminders
+    \item Mobile application support
+    \item Integration with external library databases
+    \item Fine calculation for overdue items
+    \item Barcode/QR code scanning for quick resource lookup
+\end{itemize}
+
+\end{document}
