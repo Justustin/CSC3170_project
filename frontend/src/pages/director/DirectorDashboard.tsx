@@ -45,11 +45,10 @@ export const DirectorDashboard: React.FC = () => {
   const loadData = async () => {
     setIsLoading(true);
     try {
-      const [users, resources, borrowings, overdueItems] = await Promise.all([
+      const [users, resources, borrowings] = await Promise.all([
         librarianAPI.getAllUsers(),
         librarianAPI.getResources(),
         librarianAPI.getAllBorrowings(),
-        librarianAPI.getOverdueItems(),
       ]);
 
       const librarianUsers = users.filter((u: User) => u.role === 'Librarian');
@@ -57,6 +56,9 @@ export const DirectorDashboard: React.FC = () => {
 
       // Filter for active borrowings only
       const activeBorrowings = borrowings.filter((b: any) => b.status === 'Active');
+
+      // Filter for overdue items (same logic as Borrowings page)
+      const overdueItems = borrowings.filter((b: any) => b.status === 'Overdue');
 
       setStats({
         totalUsers: users.length,
