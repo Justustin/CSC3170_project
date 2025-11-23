@@ -55,12 +55,15 @@ export const DirectorDashboard: React.FC = () => {
       const librarianUsers = users.filter((u: User) => u.role === 'Librarian');
       const patronUsers = users.filter((u: User) => u.role === 'Patron');
 
+      // Filter for active borrowings only
+      const activeBorrowings = borrowings.filter((b: any) => b.status === 'Active');
+
       setStats({
         totalUsers: users.length,
         totalLibrarians: librarianUsers.length,
         totalPatrons: patronUsers.length,
         totalResources: resources.length,
-        totalBorrowings: borrowings.length,
+        totalBorrowings: activeBorrowings.length,
         overdueItems: overdue.length,
       });
 
