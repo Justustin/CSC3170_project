@@ -7,10 +7,7 @@ interface LogEntry {
   log_id: number;
   user_id: number;
   action: string;
-  entity_type: string;
-  entity_id: number;
-  description: string;
-  ip_address: string;
+  details: string;
   created_at: string;
   users?: {
     username: string;
@@ -34,8 +31,7 @@ export const LibraryLogs: React.FC = () => {
       const filtered = logs.filter(
         (log) =>
           log.action.toLowerCase().includes(searchQuery.toLowerCase()) ||
-          log.entity_type?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-          log.description?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+          log.details?.toLowerCase().includes(searchQuery.toLowerCase()) ||
           log.users?.username?.toLowerCase().includes(searchQuery.toLowerCase())
       );
       setFilteredLogs(filtered);
@@ -118,10 +114,7 @@ export const LibraryLogs: React.FC = () => {
                     Action
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Entity
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Description
+                    Details
                   </th>
                 </tr>
               </thead>
@@ -141,11 +134,8 @@ export const LibraryLogs: React.FC = () => {
                         {log.action}
                       </span>
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                      {log.entity_type} {log.entity_id ? `#${log.entity_id}` : ''}
-                    </td>
-                    <td className="px-6 py-4 text-sm text-gray-500 max-w-xs truncate">
-                      {log.description || '-'}
+                    <td className="px-6 py-4 text-sm text-gray-500 max-w-md">
+                      {log.details || '-'}
                     </td>
                   </tr>
                 ))}
