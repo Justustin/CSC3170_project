@@ -66,9 +66,9 @@ export const Overdue: React.FC = () => {
 
     if (searchTerm) {
       filtered = filtered.filter(item =>
-        item.resources?.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        item.users?.username.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        item.users?.email.toLowerCase().includes(searchTerm.toLowerCase())
+        item.resources?.title?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        item.users?.username?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        item.users?.email?.toLowerCase().includes(searchTerm.toLowerCase())
       );
     }
 

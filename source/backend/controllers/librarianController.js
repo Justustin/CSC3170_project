@@ -178,14 +178,47 @@ exports.manageBorrowing = async (req, res) => {
         const borrowingId = req.params.id;
         const { status, due_date } = req.body;
 
+        // First, get the current borrowing to check status change and get resource_id
+        const { data: borrowing, error: fetchError } = await supabase
+            .from('borrowings')
+            .select('*, resources(*)')
+            .eq('borrowing_id', borrowingId)
+            .single();
+
+        if (fetchError || !borrowing) {
+            return res.status(404).json({ error: 'Borrowing not found.' });
+        }
+
+        // Update the borrowing
+        const updateData = { status };
+        if (due_date) updateData.due_date = due_date;
+        if (status === 'Returned') {
+            updateData.return_date = new Date().toISOString().split('T')[0];
+        }
+
         const { error } = await supabase
             .from('borrowings')
-            .update({ status, due_date })
+            .update(updateData)
             .eq('borrowing_id', borrowingId);
 
         if (error) {
             console.error('Error managing borrowing:', error);
             return res.status(500).json({ error: 'Failed to update borrowing status.' });
+        }
+
+        // If status changed to 'Returned' and was previously 'Active', update available_copies
+        if (status === 'Returned' && borrowing.status === 'Active' && borrowing.resources) {
+            const { error: resourceError } = await supabase
+                .from('resources')
+                .update({
+                    available_copies: borrowing.resources.available_copies + 1
+                })
+                .eq('resource_id', borrowing.resource_id);
+
+            if (resourceError) {
+                console.error('Error updating resource availability:', resourceError);
+                // Continue anyway - borrowing status is updated
+            }
         }
 
         res.json({ message: 'Borrowing status updated successfully.' });

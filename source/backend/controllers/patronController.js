@@ -295,6 +295,11 @@ exports.returnBorrowing = async (req, res) => {
             return res.status(404).json({ error: 'Borrowing record not found or already returned.' });
         }
 
+        // Check if resource data exists
+        if (!borrowing.resources) {
+            return res.status(500).json({ error: 'Resource data not found for this borrowing.' });
+        }
+
         // Update the borrowing record to mark as returned
         const { error: updateError } = await supabase
             .from('borrowings')
@@ -320,7 +325,12 @@ exports.returnBorrowing = async (req, res) => {
 
         if (resourceError) {
             console.error('Error updating resource:', resourceError);
-            // Even if this fails, the book is marked as returned
+            // Borrowing is marked as returned but resource count may be off
+            return res.status(207).json({
+                message: 'Book marked as returned but inventory count may be incorrect. Please contact a librarian.',
+                return_date: new Date().toISOString().split('T')[0],
+                warning: 'Resource availability update failed'
+            });
         }
 
         res.json({

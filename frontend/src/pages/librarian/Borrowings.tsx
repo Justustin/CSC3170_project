@@ -67,9 +67,9 @@ export const Borrowings: React.FC = () => {
     // Filter by search term
     if (searchTerm) {
       filtered = filtered.filter(b =>
-        b.resources?.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        b.users?.username.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        b.users?.email.toLowerCase().includes(searchTerm.toLowerCase())
+        b.resources?.title?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        b.users?.username?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        b.users?.email?.toLowerCase().includes(searchTerm.toLowerCase())
       );
     }
 
@@ -116,7 +116,14 @@ export const Borrowings: React.FC = () => {
     total: borrowings.length,
     active: borrowings.filter(b => b.status === 'Active').length,
     returned: borrowings.filter(b => b.status === 'Returned').length,
-    overdue: borrowings.filter(b => b.status === 'Overdue').length
+    overdue: borrowings.filter(b => {
+      if (b.status !== 'Active') return false;
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      const dueDate = new Date(b.due_date);
+      dueDate.setHours(0, 0, 0, 0);
+      return dueDate < today;
+    }).length
   };
 
   return (
