@@ -1,36 +1,35 @@
 // backend/controllers/authController.js
-// Pengontrol untuk autentikasi pengguna
 
 const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
 const supabase = require('../config/supabase');
 
-// Daftar patron baru
+// Register a new patron
 exports.registerPatron = async (req, res) => {
     try {
         const { username, email, password, first_name, last_name, phone_number } = req.body;
 
-        // Periksa apakah pengguna sudah ada
-        const { data: penggunaAda } = await supabase
+        // Check if user already exists
+        const { data: existingUser } = await supabase
             .from('users')
             .select('*')
             .or(`username.eq.${username},email.eq.${email}`)
             .single();
 
-        if (penggunaAda) {
-            return res.status(400).json({ error: 'Username atau email sudah digunakan.' });
+        if (existingUser) {
+            return res.status(400).json({ error: 'Username or email already exists.' });
         }
 
-        // Hash kata sandi
-        const katasandiHash = await bcrypt.hash(password, 10);
+        // Hash the password
+        const hashedPassword = await bcrypt.hash(password, 10);
 
-        // Masukkan pengguna baru
-        const { data: penggunaBaru, error: kesalahan } = await supabase
+        // Insert new user
+        const { data: newUser, error } = await supabase
             .from('users')
             .insert([{
                 username,
                 email,
-                password_hash: katasandiHash,
+                password_hash: hashedPassword,
                 role: 'Patron',
                 first_name,
                 last_name,
@@ -39,71 +38,71 @@ exports.registerPatron = async (req, res) => {
             .select()
             .single();
 
-        if (kesalahan) {
-            console.error('Kesalahan mendaftar patron:', kesalahan);
-            return res.status(500).json({ error: 'Gagal mendaftar patron.' });
+        if (error) {
+            console.error('Error registering patron:', error);
+            return res.status(500).json({ error: 'Failed to register patron.' });
         }
 
-        // Buat token JWT
+        // Generate JWT token
         const token = jwt.sign(
-            { user_id: penggunaBaru.user_id, username: penggunaBaru.username, role: penggunaBaru.role },
+            { user_id: newUser.user_id, username: newUser.username, role: newUser.role },
             process.env.JWT_SECRET,
             { expiresIn: '24h' }
         );
 
-        // Hapus kata sandi dari respons
-        delete penggunaBaru.password_hash;
+        // Remove password from response
+        delete newUser.password_hash;
 
         res.status(201).json({
-            message: 'Patron berhasil didaftarkan.',
+            message: 'Patron registered successfully.',
             token,
-            user: penggunaBaru
+            user: newUser
         });
     } catch (err) {
-        console.error('Kesalahan pendaftaran:', err);
-        res.status(500).json({ error: 'Kesalahan server internal.' });
+        console.error('Register error:', err);
+        res.status(500).json({ error: 'Internal server error.' });
     }
 };
 
-// Masuk
+// Login
 exports.login = async (req, res) => {
     try {
         const { username, password } = req.body;
 
-        // Ambil pengguna berdasarkan username
-        const { data: pengguna, error: kesalahan } = await supabase
+        // Fetch user by username
+        const { data: user, error } = await supabase
             .from('users')
             .select('*')
             .eq('username', username)
             .single();
 
-        if (kesalahan || !pengguna) {
-            return res.status(401).json({ error: 'Kredensial tidak valid.' });
+        if (error || !user) {
+            return res.status(401).json({ error: 'Invalid credentials.' });
         }
 
-        // Bandingkan kata sandi
-        const cocok = await bcrypt.compare(password, pengguna.password_hash);
-        if (!cocok) {
-            return res.status(401).json({ error: 'Kredensial tidak valid.' });
+        // Compare password
+        const isMatch = await bcrypt.compare(password, user.password_hash);
+        if (!isMatch) {
+            return res.status(401).json({ error: 'Invalid credentials.' });
         }
 
-        // Buat token JWT
+        // Generate JWT token
         const token = jwt.sign(
-            { user_id: pengguna.user_id, username: pengguna.username, role: pengguna.role },
+            { user_id: user.user_id, username: user.username, role: user.role },
             process.env.JWT_SECRET,
             { expiresIn: '24h' }
         );
 
-        // Hapus kata sandi dari respons
-        delete pengguna.password_hash;
+        // Remove password from response
+        delete user.password_hash;
 
         res.status(200).json({
-            message: 'Login berhasil.',
+            message: 'Login successful.',
             token,
-            user: pengguna
+            user
         });
     } catch (err) {
-        console.error('Kesalahan login:', err);
-        res.status(500).json({ error: 'Kesalahan server internal.' });
+        console.error('Login error:', err);
+        res.status(500).json({ error: 'Internal server error.' });
     }
 };
