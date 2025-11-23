@@ -256,8 +256,11 @@ exports.generateReports = async (req, res) => {
             .select('*', { count: 'exact', head: true })
             .eq('status', 'Active');
 
-        // Get overdue borrowings
-        const today = new Date().toISOString().split('T')[0];
+        // Get overdue borrowings (use local date to match getOverdueItems)
+        const now = new Date();
+        const today = now.getFullYear() + '-' +
+            String(now.getMonth() + 1).padStart(2, '0') + '-' +
+            String(now.getDate()).padStart(2, '0');
         const { count: overdueBorrowings } = await supabase
             .from('borrowings')
             .select('*', { count: 'exact', head: true })
