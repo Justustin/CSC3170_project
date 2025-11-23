@@ -58,11 +58,10 @@ export const Borrowings: React.FC = () => {
 
   const isOverdue = (b: Borrowing) => {
     if (b.status !== 'Active') return false;
+    // Parse dates as local dates to avoid timezone issues
     const today = new Date();
-    today.setHours(0, 0, 0, 0);
-    const dueDate = new Date(b.due_date);
-    dueDate.setHours(0, 0, 0, 0);
-    return dueDate < today;
+    const todayStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
+    return b.due_date < todayStr;
   };
 
   const filterBorrowings = () => {
