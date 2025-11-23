@@ -187,7 +187,7 @@ created\_at & Timestamp of reservation creation \\
 
 \section{Front and Back-End Design and Implementation}
 
-The Library Management System employs a modern \textbf{client-server architecture} with a React frontend and Node.js/Express backend, ensuring a clear separation of concerns, enhancing maintainability and scalability.
+The Library Management System employs a modern \textbf{client-server architecture} with a React/TypeScript frontend and Node.js/Express backend, ensuring a clear separation of concerns, enhancing maintainability and scalability. The system uses Supabase (PostgreSQL) for data persistence and real-time features.
 
 \subsection{Backend Design}
 
@@ -196,10 +196,12 @@ The Library Management System employs a modern \textbf{client-server architectur
 \begin{itemize}
     \item \textbf{Node.js:} JavaScript runtime for building scalable network applications.
     \item \textbf{Express.js:} Web framework for handling HTTP requests and routing.
-    \item \textbf{Supabase:} PostgreSQL database with built-in authentication and real-time features.
-    \item \textbf{bcrypt:} Library for hashing passwords securely.
-    \item \textbf{jsonwebtoken:} Library for JWT token generation and verification.
-    \item \textbf{dayjs:} Lightweight date manipulation library.
+    \item \textbf{Supabase:} PostgreSQL database-as-a-service with RESTful API.
+    \item \textbf{bcrypt:} Library for hashing passwords securely (10 salt rounds).
+    \item \textbf{jsonwebtoken:} Library for JWT token generation and verification (24h expiry).
+    \item \textbf{dayjs:} Lightweight date manipulation library for due date calculations.
+    \item \textbf{cors:} Cross-origin resource sharing middleware.
+    \item \textbf{dotenv:} Environment variable management.
 \end{itemize}
 
 \subsubsection{Key Modules and Routes}
@@ -301,24 +303,106 @@ Handle Reservation & \texttt{handleReservation} (Backend) & Updates reservation 
 \subsubsection{Technologies Used}
 
 \begin{itemize}
-    \item \textbf{React:} JavaScript library for building user interfaces.
-    \item \textbf{TypeScript:} Typed superset of JavaScript for better code quality.
-    \item \textbf{Tailwind CSS:} Utility-first CSS framework for responsive design.
-    \item \textbf{React Router:} Client-side routing for single-page application.
-    \item \textbf{Axios:} HTTP client for API requests.
-    \item \textbf{Lucide React:} Icon library for UI elements.
+    \item \textbf{React 18:} JavaScript library for building component-based user interfaces.
+    \item \textbf{TypeScript:} Typed superset of JavaScript for type safety and better IDE support.
+    \item \textbf{Tailwind CSS:} Utility-first CSS framework for rapid, responsive UI development.
+    \item \textbf{React Router v6:} Declarative client-side routing for single-page application navigation.
+    \item \textbf{Axios:} Promise-based HTTP client for API requests with interceptors.
+    \item \textbf{Lucide React:} Modern icon library with tree-shakable SVG icons.
+    \item \textbf{Vite:} Next-generation frontend build tool for fast development.
+    \item \textbf{Context API:} React's built-in state management for authentication state.
 \end{itemize}
 
 \subsubsection{Key Modules and Functions}
 
-The frontend is organized into role-based page components:
+The frontend is organized into role-based page components with shared layouts and reusable UI components:
+
+\textbf{Core Components:}
+\begin{itemize}
+    \item \texttt{Layout.tsx} - Main layout wrapper with navigation sidebar
+    \item \texttt{Navbar.tsx} - Role-aware navigation with dynamic menu items
+    \item \texttt{Button.tsx}, \texttt{Input.tsx}, \texttt{Card.tsx} - Reusable UI components
+    \item \texttt{ProtectedRoute.tsx} - Route guard for role-based access control
+\end{itemize}
+
+\textbf{Authentication Pages:}
+\begin{itemize}
+    \item \texttt{Login.tsx} - User authentication with JWT token storage
+    \item \texttt{Register.tsx} - New patron registration
+\end{itemize}
+
+\textbf{Patron Pages:}
+\begin{itemize}
+    \item \texttt{SearchCatalog.tsx} - Resource search with filters (type, genre)
+    \item \texttt{BorrowedBooks.tsx} - View active borrowings, renew, return
+    \item \texttt{BorrowHistory.tsx} - Complete borrowing history
+    \item \texttt{Notifications.tsx} - User notifications
+    \item \texttt{Profile.tsx} - Profile management
+\end{itemize}
+
+\textbf{Librarian Pages:}
+\begin{itemize}
+    \item \texttt{ManageResources.tsx} - CRUD operations for library resources
+    \item \texttt{ManageUsers.tsx} - User account management
+    \item \texttt{Borrowings.tsx} - View and manage all borrowings with status filters
+    \item \texttt{Overdue.tsx} - Overdue items tracking
+    \item \texttt{Reports.tsx} - System statistics and popular resources
+    \item \texttt{LibraryLogs.tsx} - Audit trail viewer
+\end{itemize}
+
+\textbf{Director Pages:}
+\begin{itemize}
+    \item \texttt{DirectorDashboard.tsx} - System-wide statistics (users, resources, borrowings, overdue) and librarian management (add, edit, delete)
+\end{itemize}
+
+\subsubsection{API Layer}
+
+The frontend communicates with the backend through a centralized API layer:
 
 \begin{itemize}
-    \item \textbf{Authentication:} Login and Register pages handle user authentication.
-    \item \textbf{Patron Pages:} SearchCatalog, BorrowedBooks, BorrowHistory, Notifications, Profile.
-    \item \textbf{Librarian Pages:} ManageResources, ManageUsers, Borrowings, Overdue, Reports, LibraryLogs.
-    \item \textbf{Director Pages:} DirectorDashboard with system statistics and librarian management.
+    \item \texttt{api/axios.ts} - Axios instance with base URL and JWT interceptor
+    \item \texttt{api/auth.ts} - Authentication API calls (login, register)
+    \item \texttt{api/patron.ts} - Patron-specific API calls
+    \item \texttt{api/librarian.ts} - Librarian/Director API calls
 \end{itemize}
+
+\subsubsection{Type Definitions}
+
+TypeScript interfaces ensure type safety across the application:
+
+\begin{verbatim}
+interface User {
+  user_id: number;
+  username: string;
+  email: string;
+  role: 'Librarian' | 'Patron' | 'Director';
+  first_name?: string;
+  last_name?: string;
+  phone_number?: string;
+}
+
+interface Resource {
+  resource_id: number;
+  title: string;
+  author: string;
+  isbn?: string;
+  resource_type: string;
+  genre?: string;
+  total_copies: number;
+  available_copies: number;
+}
+
+interface Borrowing {
+  borrowing_id: number;
+  user_id: number;
+  resource_id: number;
+  borrow_date: string;
+  due_date: string;
+  return_date?: string;
+  renewals: number;
+  status: 'Active' | 'Returned';
+}
+\end{verbatim}
 
 \section{How to Use the System}
 
